@@ -1,0 +1,635 @@
+{
+  "articles": [
+    {
+      "id": "origin",
+      "title": "帷幕诞生之前",
+      "rewritten": true,
+      "original": false,
+      "characters": 1813,
+      "chapters": 5,
+      "chapterLengths": [
+        346,
+        351,
+        332,
+        319,
+        465
+      ]
+    },
+    {
+      "id": "continents",
+      "title": "穹顶之下的土地",
+      "rewritten": true,
+      "original": false,
+      "characters": 2592,
+      "chapters": 7,
+      "chapterLengths": [
+        389,
+        402,
+        356,
+        373,
+        336,
+        369,
+        367
+      ]
+    },
+    {
+      "id": "gates",
+      "title": "界门与距离",
+      "rewritten": true,
+      "original": false,
+      "characters": 1890,
+      "chapters": 5,
+      "chapterLengths": [
+        380,
+        384,
+        361,
+        390,
+        375
+      ]
+    },
+    {
+      "id": "stone",
+      "title": "蕴法石的旅程",
+      "rewritten": true,
+      "original": false,
+      "characters": 1817,
+      "chapters": 5,
+      "chapterLengths": [
+        357,
+        362,
+        368,
+        344,
+        386
+      ]
+    },
+    {
+      "id": "camoria",
+      "title": "卡莫瑞亚：世界之尺",
+      "rewritten": true,
+      "original": false,
+      "characters": 3563,
+      "chapters": 6,
+      "chapterLengths": [
+        618,
+        598,
+        614,
+        579,
+        519,
+        635
+      ]
+    },
+    {
+      "id": "eisen",
+      "title": "艾森洛德：工坊与秩序",
+      "rewritten": true,
+      "original": false,
+      "characters": 1851,
+      "chapters": 5,
+      "chapterLengths": [
+        376,
+        373,
+        383,
+        363,
+        356
+      ]
+    },
+    {
+      "id": "northlands",
+      "title": "茨威尔格诺：漫长的冬天",
+      "rewritten": true,
+      "original": false,
+      "characters": 1808,
+      "chapters": 5,
+      "chapterLengths": [
+        366,
+        354,
+        375,
+        351,
+        362
+      ]
+    },
+    {
+      "id": "esperanza",
+      "title": "埃斯佩兰萨：港口与矿脉",
+      "rewritten": true,
+      "original": false,
+      "characters": 1806,
+      "chapters": 5,
+      "chapterLengths": [
+        432,
+        335,
+        363,
+        352,
+        324
+      ]
+    },
+    {
+      "id": "enchantevis",
+      "title": "昂尚特维斯：森林与文字",
+      "rewritten": true,
+      "original": false,
+      "characters": 1819,
+      "chapters": 5,
+      "chapterLengths": [
+        325,
+        357,
+        363,
+        353,
+        421
+      ]
+    },
+    {
+      "id": "wands",
+      "title": "从长杖到短杖",
+      "rewritten": true,
+      "original": false,
+      "characters": 1917,
+      "chapters": 5,
+      "chapterLengths": [
+        388,
+        401,
+        371,
+        391,
+        366
+      ]
+    },
+    {
+      "id": "alchemy",
+      "title": "炼金术的两条道路",
+      "rewritten": true,
+      "original": false,
+      "characters": 1875,
+      "chapters": 5,
+      "chapterLengths": [
+        384,
+        377,
+        363,
+        377,
+        374
+      ]
+    },
+    {
+      "id": "tyndale-early",
+      "title": "庭代尔·克罗蒂：少年时期",
+      "rewritten": true,
+      "original": false,
+      "characters": 1821,
+      "chapters": 5,
+      "chapterLengths": [
+        400,
+        322,
+        397,
+        361,
+        341
+      ]
+    },
+    {
+      "id": "chronicles",
+      "title": "年代之后：怎样读帷幕历史",
+      "rewritten": true,
+      "original": false,
+      "characters": 1914,
+      "chapters": 6,
+      "chapterLengths": [
+        328,
+        321,
+        311,
+        310,
+        323,
+        321
+      ]
+    },
+    {
+      "id": "history-discrete-full",
+      "title": "离散纪 · 全文",
+      "rewritten": false,
+      "original": true,
+      "characters": 6490,
+      "chapters": 9,
+      "chapterLengths": [
+        422,
+        1067,
+        625,
+        662,
+        682,
+        899,
+        763,
+        763,
+        607
+      ]
+    },
+    {
+      "id": "history-nineteen-full",
+      "title": "十九家 · 全文",
+      "rewritten": false,
+      "original": true,
+      "characters": 5817,
+      "chapters": 8,
+      "chapterLengths": [
+        284,
+        734,
+        774,
+        1558,
+        740,
+        704,
+        507,
+        516
+      ]
+    },
+    {
+      "id": "casting-reference",
+      "title": "施法原理详论",
+      "rewritten": true,
+      "original": false,
+      "characters": 1810,
+      "chapters": 5,
+      "chapterLengths": [
+        363,
+        358,
+        354,
+        349,
+        386
+      ]
+    },
+    {
+      "id": "currency-study",
+      "title": "从索比恩到加令",
+      "rewritten": true,
+      "original": false,
+      "characters": 1809,
+      "chapters": 5,
+      "chapterLengths": [
+        398,
+        392,
+        341,
+        356,
+        322
+      ]
+    },
+    {
+      "id": "food-and-work",
+      "title": "粮食、机器与日常劳动",
+      "rewritten": true,
+      "original": false,
+      "characters": 1806,
+      "chapters": 5,
+      "chapterLengths": [
+        352,
+        367,
+        384,
+        389,
+        314
+      ]
+    },
+    {
+      "id": "artefacts-study",
+      "title": "造物：被保存的魔力",
+      "rewritten": true,
+      "original": false,
+      "characters": 1808,
+      "chapters": 5,
+      "chapterLengths": [
+        355,
+        368,
+        379,
+        347,
+        359
+      ]
+    },
+    {
+      "id": "treaty-study",
+      "title": "和平条约的两种约束",
+      "rewritten": true,
+      "original": false,
+      "characters": 1852,
+      "chapters": 6,
+      "chapterLengths": [
+        328,
+        306,
+        317,
+        335,
+        223,
+        343
+      ]
+    },
+    {
+      "id": "ministry-government",
+      "title": "魔法联合部如何治理",
+      "rewritten": true,
+      "original": false,
+      "characters": 2045,
+      "chapters": 6,
+      "chapterLengths": [
+        342,
+        354,
+        328,
+        335,
+        340,
+        346
+      ]
+    },
+    {
+      "id": "inhabitants-history",
+      "title": "帷幕中的原住民与迁徙者",
+      "rewritten": true,
+      "original": false,
+      "characters": 1812,
+      "chapters": 5,
+      "chapterLengths": [
+        327,
+        416,
+        346,
+        380,
+        343
+      ]
+    },
+    {
+      "id": "world-trade",
+      "title": "帷幕边界上的贸易",
+      "rewritten": true,
+      "original": false,
+      "characters": 1827,
+      "chapters": 5,
+      "chapterLengths": [
+        312,
+        390,
+        371,
+        391,
+        363
+      ]
+    },
+    {
+      "id": "wizard-ranks-study",
+      "title": "巫师的七个阶段",
+      "rewritten": true,
+      "original": false,
+      "characters": 1873,
+      "chapters": 5,
+      "chapterLengths": [
+        403,
+        369,
+        380,
+        347,
+        374
+      ]
+    },
+    {
+      "id": "authority-research",
+      "title": "权柄与神格",
+      "rewritten": true,
+      "original": false,
+      "characters": 2521,
+      "chapters": 6,
+      "chapterLengths": [
+        413,
+        418,
+        455,
+        437,
+        383,
+        415
+      ]
+    },
+    {
+      "id": "divination-methods",
+      "title": "占卜的七种门径",
+      "rewritten": true,
+      "original": false,
+      "characters": 1847,
+      "chapters": 5,
+      "chapterLengths": [
+        369,
+        358,
+        381,
+        377,
+        362
+      ]
+    },
+    {
+      "id": "guardian-spirits-study",
+      "title": "守护灵与契约",
+      "rewritten": true,
+      "original": false,
+      "characters": 1804,
+      "chapters": 5,
+      "chapterLengths": [
+        369,
+        363,
+        346,
+        344,
+        382
+      ]
+    },
+    {
+      "id": "magic-disciplines-index",
+      "title": "高级魔法的三十八种体系",
+      "rewritten": true,
+      "original": false,
+      "characters": 1840,
+      "chapters": 5,
+      "chapterLengths": [
+        368,
+        383,
+        366,
+        351,
+        372
+      ]
+    },
+    {
+      "id": "old-and-modern-spells",
+      "title": "古代魔法与现代咒语",
+      "rewritten": true,
+      "original": false,
+      "characters": 1801,
+      "chapters": 5,
+      "chapterLengths": [
+        367,
+        377,
+        347,
+        354,
+        356
+      ]
+    },
+    {
+      "id": "soul-and-death-study",
+      "title": "灵魂、心灵与亡者",
+      "rewritten": true,
+      "original": false,
+      "characters": 1800,
+      "chapters": 5,
+      "chapterLengths": [
+        361,
+        345,
+        355,
+        373,
+        366
+      ]
+    },
+    {
+      "id": "crotty-family-study",
+      "title": "克罗蒂：一个姓氏的重量",
+      "rewritten": true,
+      "original": false,
+      "characters": 1855,
+      "chapters": 5,
+      "chapterLengths": [
+        391,
+        325,
+        307,
+        438,
+        394
+      ]
+    },
+    {
+      "id": "tiarnas-early-study",
+      "title": "提亚纳斯·克罗蒂",
+      "rewritten": true,
+      "original": false,
+      "characters": 1825,
+      "chapters": 5,
+      "chapterLengths": [
+        397,
+        325,
+        406,
+        308,
+        389
+      ]
+    },
+    {
+      "id": "sinclair-study",
+      "title": "辛克莱尔·德维雷斯",
+      "rewritten": true,
+      "original": false,
+      "characters": 1810,
+      "chapters": 5,
+      "chapterLengths": [
+        372,
+        380,
+        370,
+        302,
+        386
+      ]
+    },
+    {
+      "id": "knights-community",
+      "title": "诺伐圣廷骑士团",
+      "rewritten": true,
+      "original": false,
+      "characters": 1896,
+      "chapters": 5,
+      "chapterLengths": [
+        386,
+        381,
+        368,
+        378,
+        383
+      ]
+    },
+    {
+      "id": "ernicium-profile",
+      "title": "厄尼西姆",
+      "rewritten": true,
+      "original": false,
+      "characters": 1845,
+      "chapters": 5,
+      "chapterLengths": [
+        460,
+        412,
+        317,
+        320,
+        336
+      ]
+    },
+    {
+      "id": "galibel-profile",
+      "title": "加利贝尔",
+      "rewritten": true,
+      "original": false,
+      "characters": 1868,
+      "chapters": 5,
+      "chapterLengths": [
+        410,
+        377,
+        352,
+        360,
+        369
+      ]
+    },
+    {
+      "id": "huffines-profile",
+      "title": "赫法恩斯",
+      "rewritten": true,
+      "original": false,
+      "characters": 1922,
+      "chapters": 5,
+      "chapterLengths": [
+        396,
+        368,
+        390,
+        397,
+        371
+      ]
+    },
+    {
+      "id": "pridony-profile",
+      "title": "普里多尼",
+      "rewritten": true,
+      "original": false,
+      "characters": 1966,
+      "chapters": 5,
+      "chapterLengths": [
+        394,
+        401,
+        383,
+        419,
+        369
+      ]
+    },
+    {
+      "id": "cyprus-profile",
+      "title": "塞浦路斯",
+      "rewritten": true,
+      "original": false,
+      "characters": 1817,
+      "chapters": 5,
+      "chapterLengths": [
+        364,
+        360,
+        362,
+        375,
+        356
+      ]
+    },
+    {
+      "id": "chessia-profile",
+      "title": "切西娅",
+      "rewritten": true,
+      "original": false,
+      "characters": 1842,
+      "chapters": 5,
+      "chapterLengths": [
+        371,
+        356,
+        370,
+        384,
+        361
+      ]
+    },
+    {
+      "id": "divination-study",
+      "title": "占卜与灵界的记录",
+      "rewritten": true,
+      "original": false,
+      "characters": 2521,
+      "chapters": 6,
+      "chapterLengths": [
+        435,
+        482,
+        405,
+        399,
+        387,
+        413
+      ]
+    }
+  ],
+  "failed": []
+}

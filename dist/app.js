@@ -6,7 +6,7 @@
   const id = params.get('article');
   const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const section = data.sections.find(x => x.id === page);
-  const article = data.articles.find(x => x.id === id);
+  const article = data.articles.find(x => x.id === (data.aliases?.[id] || id));
   const articleLink = a => `<a class="article-link" href="?article=${encodeURIComponent(a.id)}"><small>${escape(a.eyebrow)}</small><h2>${escape(a.title)} ↗</h2><p>${escape(a.lead)}</p></a>`;
   const readingMinutes = a => Math.max(1, Math.ceil((a.paragraphs || []).join('').length / 450));
   if (id && article) {
