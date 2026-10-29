@@ -8,6 +8,7 @@
   const section = data.sections.find(x => x.id === page);
   const article = data.articles.find(x => x.id === id);
   const articleLink = a => `<a class="article-link" href="?article=${encodeURIComponent(a.id)}"><small>${escape(a.eyebrow)}</small><h2>${escape(a.title)} ↗</h2><p>${escape(a.lead)}</p></a>`;
+  const readingMinutes = a => Math.max(1, Math.ceil((a.paragraphs || []).join('').length / 450));
   if (id && article) {
     document.title = `${article.title} | 帷幕研究所`;
     const chapters = article.chapters?.length ? article.chapters : [{heading:'正文', paragraphs:article.paragraphs}];
@@ -39,6 +40,27 @@
     main.innerHTML = `<div class="page-hero"><h1>未找到这份馆藏</h1><p>请返回研究所首页，继续浏览其他资料。</p><a class="action" href="./">返回首页 ↗</a></div>`;
   } else {
     main.innerHTML = `<section class="hero"><div class="hero-image"></div><div class="hero-copy"><div class="kicker">THE CURTAIN INSTITUTE</div><h1><span>在帷幕之下，</span><span>阅读一个世界。</span></h1><p>五片大陆，漫长的历史，与仍在延续的文明。<br>欢迎来到帷幕研究所。</p><a class="action" href="#explore">探索研究所 <span>↘</span></a></div><div class="hero-side">A WORLD BENEATH THE VEIL</div></section><section class="intro"><div><div class="kicker">A SHARED WORLD</div><h2>一座帷幕，<br>无数条走向这里的路。</h2><div class="line"></div></div><div><div class="big-number">1077</div><p>那一年，一道穹顶笼罩了五大陆与四片海域。但这片土地的故事，远比帷幕更古老。</p><p>从迁徙与相遇，到魔法的传承与文明的变迁，我们在此整理过去，也重新认识生活于其中的世界。</p><a class="action" href="?article=origin">阅读帷幕的起源 <span>↗</span></a></div></section><section class="departments" id="explore"><div class="departments-inner"><div class="kicker">EXPLORE THE INSTITUTE</div><h2 class="section-title">从这里，走进帷幕。</h2><p class="section-lead">循着历史、土地与人的足迹，在不同的研究室中找到自己的入口。</p><div class="dept-list">${data.sections.map(s => `<a class="dept" href="?page=${encodeURIComponent(s.id)}"><span class="num">${escape(s.number)}</span><h3>${escape(s.title)}</h3><p>${escape(s.description)}</p><span class="arrow">↗</span></a>`).join('')}</div></div></section><section class="feature"><div class="feature-inner"><div class="feature-visual" aria-hidden="true"><div class="orbit"><span>V</span></div></div><div><div class="kicker">GEOGRAPHY & CIVILISATION</div><h2 class="section-title">五大陆，<br>各自生长的文明。</h2><p>土地与海洋塑造生活，魔法与贸易连接彼此。认识这片世界，从它的地方差异开始。</p><a class="action" href="?page=geography">前往地理与文明馆 <span>↗</span></a></div></div></section>`;
+  }
+  // A curated first encounter gives each collection a clear starting point.
+  if (section) {
+    const recommendations = {history:'history-discrete-full', geography:'continents', magic:'wizard-ranks-study', people:'knights-community', library:'history-nineteen-full'};
+    const featured = data.articles.find(a => a.id === recommendations[page]);
+    if (featured) {
+      const title = {history:'从一次离散，读懂文明的来路。',geography:'先认识土地，再认识生活于此的人。',magic:'从一名巫师的成长开始。',people:'历史由人相遇，也由人改变。',library:'本次选读：一段秩序的形成。'}[page];
+      const block = document.createElement('section'); block.className='curator-feature';
+      block.innerHTML=`<div class="curator-intro"><span class="curator-label">研究所选读</span><h2>${escape(title)}</h2><p>沿着一篇文章进入，再循关联馆藏深入。</p></div><a class="curator-article" href="?article=${encodeURIComponent(featured.id)}"><small>${escape(featured.eyebrow)}</small><h3>${escape(featured.title)}</h3><p>${escape(featured.lead)}</p><span class="feature-meta">约 ${readingMinutes(featured)} 分钟阅读 <b>阅读文章 ↗</b></span></a>`;
+      main.querySelector('.page-inner .back').after(block);
+    }
+  }
+  document.querySelectorAll('#nav a').forEach(a => {if (new URL(a.href).searchParams.get('page') === (page || article?.section)) a.setAttribute('aria-current','page');});
+  if (article) {
+    const tocLinks = [...main.querySelectorAll('.reading-aside nav a')];
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {if(entry.isIntersecting){tocLinks.forEach(a=>a.toggleAttribute('data-current',a.hash === '#'+entry.target.id));}});
+    }, {rootMargin:'-10% 0px -65% 0px'});
+    main.querySelectorAll('.article-chapter').forEach(c=>observer.observe(c));
+    const aside = main.querySelector('.reading-aside');
+    const meta = document.createElement('p');meta.className='reading-duration';meta.textContent=`约 ${readingMinutes(article)} 分钟阅读`;aside.prepend(meta);
   }
   const toggle = document.querySelector('.menu-toggle');
   toggle.addEventListener('click', () => { const open = toggle.getAttribute('aria-expanded') !== 'true'; toggle.setAttribute('aria-expanded', String(open)); document.querySelector('#nav').classList.toggle('open', open); });
