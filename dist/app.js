@@ -10,13 +10,25 @@
   const articleLink = a => `<a class="article-link" href="?article=${encodeURIComponent(a.id)}"><small>${escape(a.eyebrow)}</small><h2>${escape(a.title)} ↗</h2><p>${escape(a.lead)}</p></a>`;
   if (id && article) {
     document.title = `${article.title} | 帷幕研究所`;
-    main.innerHTML = `<div class="page-hero"><p class="kicker">THE CURTAIN INSTITUTE / PUBLIC ARCHIVE</p><h1>${escape(article.title)}</h1><p>${escape(article.subtitle)}</p></div><div class="page-content"><article class="article"><a class="back" href="?page=${encodeURIComponent(article.section)}">← 返回研究室</a><p class="article-meta">${escape(article.eyebrow)}</p><p class="lead">${escape(article.lead)}</p><hr>${article.paragraphs.map(p => `<p>${escape(p)}</p>`).join('')}<hr><p class="sources">延伸阅读：${article.source.map(escape).join(' · ')}</p><a class="back" href="?page=${encodeURIComponent(article.section)}">← 返回研究室</a></article></div>`;
+    const chapters = article.chapters?.length ? article.chapters : [{heading:'正文', paragraphs:article.paragraphs}];
+    const related = data.articles.filter(a => a.section === article.section && a.id !== article.id).slice(0,3);
+    main.innerHTML = `<div class="page-hero page-hero--article"><p class="kicker">THE CURTAIN INSTITUTE / PUBLIC ARCHIVE</p><h1>${escape(article.title)}</h1><p>${escape(article.subtitle)}</p><div class="hero-index">研究所 · 公共阅览</div></div><div class="page-content"><div class="reading-layout"><aside class="reading-aside"><a class="back" href="?page=${encodeURIComponent(article.section)}">← 返回研究室</a><div class="aside-label">本篇目录</div><nav aria-label="文章目录">${chapters.map((c,i)=>`<a href="#chapter-${i+1}">${escape(c.heading)}</a>`).join('')}</nav><div class="aside-label">所属馆藏</div><p>${escape(article.eyebrow)}</p></aside><article class="article"><p class="article-meta">${escape(article.eyebrow)}</p><p class="lead">${escape(article.lead)}</p><hr>${chapters.map((c,i)=>`<section id="chapter-${i+1}" class="article-chapter"><h2 class="article-section-heading">${escape(c.heading)}</h2>${c.paragraphs.map(p=>`<p>${escape(p)}</p>`).join('')}</section>`).join('')}<hr><div class="sources"><strong>延伸阅读</strong><p>${article.source.map(escape).join(' · ')}</p></div>${related.length?`<div class="related"><h2>继续阅读</h2>${related.map(articleLink).join('')}</div>`:''}<a class="back" href="?page=${encodeURIComponent(article.section)}">← 返回研究室</a></article></div></div>`;
   } else if (section) {
     document.title = `${section.title} | 帷幕研究所`;
     const timeline = page === 'history' ? `<h2>历史的脉络</h2><div class="timeline">${data.timeline.map(t => `<div class="event"><time>${escape(t.year)}</time><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p></div>`).join('')}</div>` : '';
     const regions = page === 'geography' ? `<h2>五大陆概览</h2><p>选择一块大陆，了解它的方位与地方传统。</p><div class="regions">${data.regions.map((r,i) => `<button class="region" data-region="${i}" aria-pressed="${i===0}"><small>${escape(r.direction)}</small>${escape(r.name)}</button>`).join('')}</div><div class="region-detail" aria-live="polite"></div>` : '';
     const entries = page === 'library' ? data.articles : data.articles.filter(a => a.section === page);
-    main.innerHTML = `<div class="page-hero"><p class="kicker">THE CURTAIN INSTITUTE / ${escape(section.en)}</p><h1>${escape(section.title)}</h1><p>${escape(section.description)}</p></div><div class="page-content"><div class="page-inner"><a href="./" class="back">← 研究所首页</a>${timeline}${regions}<h2>馆藏导读</h2><div class="articles">${entries.map(articleLink).join('')}</div></div></div>`;
+    main.innerHTML = `<div class="page-hero page-hero--section" data-section="${escape(page)}"><p class="kicker">THE CURTAIN INSTITUTE / ${escape(section.en)}</p><h1>${escape(section.title)}</h1><p>${escape(section.description)}</p><div class="hero-index">${escape(section.number)} <span> / 研究所馆藏</span></div></div><div class="page-content"><div class="page-inner"><a href="./" class="back">← 研究所首页</a>${timeline}${regions}<div class="catalog-heading"><div><p class="catalog-label">RESEARCH COLLECTION</p><h2>馆藏文章</h2></div><span>${entries.length} 篇文章</span></div>${page === 'library' ? '<label class="search-label" for="catalog-search">检索馆藏</label><input id="catalog-search" class="catalog-search" type="search" placeholder="搜索标题、主题或内容" autocomplete="off"><p class="search-empty" hidden>没有找到相关馆藏，请试试其他关键词。</p>' : ''}<div class="articles">${entries.map(articleLink).join('')}</div></div></div>`;
+    if (page === 'library') {
+      const input = main.querySelector('#catalog-search');
+      const cards = [...main.querySelectorAll('.article-link')];
+      input.addEventListener('input', () => {
+        const q = input.value.trim().toLocaleLowerCase();
+        let count = 0;
+        cards.forEach((card, i) => { const a=entries[i]; const found = [a.title,a.subtitle,a.lead,a.eyebrow,...(a.paragraphs||[]),...(a.chapters||[]).flatMap(c=>[c.heading,...c.paragraphs])].join(' ').toLocaleLowerCase().includes(q); card.hidden = !found; if(found) count++; });
+        main.querySelector('.search-empty').hidden = count > 0;
+      });
+    }
     if (page === 'geography') {
       const detail = main.querySelector('.region-detail');
       const renderRegion = i => { const r = data.regions[i]; detail.innerHTML = `<h3>${escape(r.name)}</h3><p>${escape(r.description)}</p><small>地方魔法传统：${escape(r.focus)}</small>`; main.querySelectorAll('.region').forEach((b,j) => b.setAttribute('aria-pressed', String(j === i))); };
@@ -35,6 +47,8 @@
       gsap.from('.hero-copy > *', { y: 24, opacity: 0, duration: 1.1, stagger: .15, ease: 'power3.out' });
       gsap.to('.hero-image', { scale: 1.12, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
       gsap.to('.orbit', { rotation: 90, scrollTrigger: { trigger: '.feature', start: 'top bottom', end: 'bottom top', scrub: 1 } });
+    } else {
+      gsap.fromTo('.page-hero h1', {y: 16}, {y: 0, duration: 0.9, ease:'power3.out'});
     }
   }
 })();
