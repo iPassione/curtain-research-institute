@@ -18,16 +18,17 @@
     const timeline = page === 'history' ? `<h2>历史的脉络</h2><div class="timeline">${data.timeline.map(t => `<div class="event"><time>${escape(t.year)}</time><h3>${escape(t.title)}</h3><p>${escape(t.description)}</p></div>`).join('')}</div>` : '';
     const regions = page === 'geography' ? `<h2>五大陆概览</h2><p>选择一块大陆，了解它的方位与地方传统。</p><div class="regions">${data.regions.map((r,i) => `<button class="region" data-region="${i}" aria-pressed="${i===0}"><small>${escape(r.direction)}</small>${escape(r.name)}</button>`).join('')}</div><div class="region-detail" aria-live="polite"></div>` : '';
     const entries = page === 'library' ? data.articles : data.articles.filter(a => a.section === page);
-    main.innerHTML = `<div class="page-hero page-hero--section" data-section="${escape(page)}"><p class="kicker">THE CURTAIN INSTITUTE / ${escape(section.en)}</p><h1>${escape(section.title)}</h1><p>${escape(section.description)}</p><div class="hero-index">${escape(section.number)} <span> / 研究所馆藏</span></div></div><div class="page-content"><div class="page-inner"><a href="./" class="back">← 研究所首页</a>${timeline}${regions}<div class="catalog-heading"><div><p class="catalog-label">RESEARCH COLLECTION</p><h2>馆藏文章</h2></div><span>${entries.length} 篇文章</span></div>${page === 'library' ? '<label class="search-label" for="catalog-search">检索馆藏</label><input id="catalog-search" class="catalog-search" type="search" placeholder="搜索标题、主题或内容" autocomplete="off"><p class="search-empty" hidden>没有找到相关馆藏，请试试其他关键词。</p>' : ''}<div class="articles">${entries.map(articleLink).join('')}</div></div></div>`;
+    main.innerHTML = `<div class="page-hero page-hero--section" data-section="${escape(page)}"><p class="kicker">THE CURTAIN INSTITUTE / ${escape(section.en)}</p><h1>${escape(section.title)}</h1><p>${escape(section.description)}</p><div class="hero-index">${escape(section.number)} <span> / 研究所馆藏</span></div></div><div class="page-content"><div class="page-inner"><a href="./" class="back">← 研究所首页</a>${timeline}${regions}<div class="catalog-heading"><div><p class="catalog-label">RESEARCH COLLECTION</p><h2>馆藏文章</h2></div><span>${entries.length} 篇文章</span></div>${page === 'library' ? '<label class="search-label" for="catalog-search">检索馆藏</label><input id="catalog-search" class="catalog-search" type="search" placeholder="搜索标题、主题或内容" autocomplete="off"><label class="search-label" for="catalog-filter">按研究室浏览</label><select id="catalog-filter" class="catalog-search"><option value="">全部研究室</option>'+data.sections.map(s=>`<option value="${escape(s.id)}">${escape(s.title)}</option>`).join('')+'</select><p class="search-empty" hidden>没有找到相关馆藏，请试试其他关键词。</p>' : ''}<div class="articles">${entries.map(articleLink).join('')}</div></div></div>`;
     if (page === 'library') {
       const input = main.querySelector('#catalog-search');
       const cards = [...main.querySelectorAll('.article-link')];
-      input.addEventListener('input', () => {
+      const filter = main.querySelector('#catalog-filter');
+      const updateSearch = () => {
         const q = input.value.trim().toLocaleLowerCase();
         let count = 0;
-        cards.forEach((card, i) => { const a=entries[i]; const found = [a.title,a.subtitle,a.lead,a.eyebrow,...(a.paragraphs||[]),...(a.chapters||[]).flatMap(c=>[c.heading,...c.paragraphs])].join(' ').toLocaleLowerCase().includes(q); card.hidden = !found; if(found) count++; });
+        cards.forEach((card, i) => { const a=entries[i]; const found = (!filter.value || a.section === filter.value) && [a.title,a.subtitle,a.lead,a.eyebrow,...(a.paragraphs||[]),...(a.chapters||[]).flatMap(c=>[c.heading,...c.paragraphs])].join(' ').toLocaleLowerCase().includes(q); card.hidden = !found; if(found) count++; });
         main.querySelector('.search-empty').hidden = count > 0;
-      });
+      }; input.addEventListener('input', updateSearch); filter.addEventListener('change', updateSearch);
     }
     if (page === 'geography') {
       const detail = main.querySelector('.region-detail');
