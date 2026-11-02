@@ -149,8 +149,8 @@
     a.paragraphs = a.chapters.flatMap(c => c.paragraphs);
     data.articles.push(a);
   });
-  const worlds = {id:'worlds', number:'05', title:'诸界观测', en:'WORLDS & BOUNDARIES', description:'从星辰、灵界与镜面，观察现实的层次与边界。', articleIds:['worlds-structure','worlds-boundaries','soul-and-death-study','divination-methods','divination-study','guardian-spirits-study','authority-research']};
-  const daily = {id:'daily', number:'06', title:'巫师日常', en:'EVERYDAY LIFE', description:'付钱、吃饭、工作与远行：魔法世界里具体的生活。', articleIds:['currency-study','food-and-work','gates','daily-tools','daily-messages','stone','world-trade','artefacts-study','guardian-spirits-study']};
+  const worlds = {id:'worlds', number:'05', title:'诸界观测', en:'WORLDS & BOUNDARIES', description:'从星辰、灵界与镜面，观察现实的层次与边界。', articleIds:['worlds-structure','worlds-boundaries','worlds-stars','worlds-mirror','worlds-time','worlds-dead']};
+  const daily = {id:'daily', number:'06', title:'巫师日常', en:'EVERYDAY LIFE', description:'付钱、吃饭、工作与远行：魔法世界里具体的生活。', articleIds:['daily-market','daily-table','daily-journey','daily-apprentice','daily-tools','daily-messages']};
   const library = data.sections.find(s=>s.id==='library'); library.number='07';
   data.sections.splice(data.sections.indexOf(library),0,worlds,daily);
 })();

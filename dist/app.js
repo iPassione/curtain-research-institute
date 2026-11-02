@@ -47,7 +47,7 @@
   }
   // A curated first encounter gives each collection a clear starting point.
   if (section) {
-    const recommendations = {history:'history-discrete-full', geography:'continents', magic:'wizard-ranks-study', people:'knights-community', library:'history-nineteen-full', worlds:'worlds-structure', daily:'food-and-work'};
+    const recommendations = {history:'history-discrete-full', geography:'continents', magic:'wizard-ranks-study', people:'knights-community', library:'history-nineteen-full', worlds:'worlds-structure', daily:'daily-table'};
     const featured = data.articles.find(a => a.id === recommendations[page]);
     if (featured) {
       const title = {history:'从一次离散，读懂文明的来路。',geography:'先认识土地，再认识生活于此的人。',magic:'从一名巫师的成长开始。',people:'历史由人相遇，也由人改变。',library:'本次选读：一段秩序的形成。', worlds:'从脚下的土地，读到现实的边界。', daily:'魔法进入生活，劳动仍在继续。'}[page];
