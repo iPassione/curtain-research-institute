@@ -1,0 +1,19 @@
+# Local tooling and preview state
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Locally packaged deployments
+*.tar.gz
+*.tgz
