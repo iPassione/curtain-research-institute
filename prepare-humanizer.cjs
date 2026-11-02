@@ -1,0 +1,11 @@
+const fs = require('fs');
+const vm = require('vm');
+const context = {window:{}};
+vm.createContext(context);
+for (const file of ['catalogue.js','collection-content.js','collection-longform.js']) vm.runInContext(fs.readFileSync('dist/'+file,'utf8'),context);
+fs.mkdirSync('humanizer/revised',{recursive:true});
+const articles=context.window.CURTAIN_CONTENT.articles;
+fs.writeFileSync('humanizer/baseline-articles.json',JSON.stringify(articles,null,2)+'\n');
+const groups={a:articles.filter(a=>['history','library','geography'].includes(a.section)),b:articles.filter(a=>['magic','worlds'].includes(a.section)),c:articles.filter(a=>['people','daily'].includes(a.section))};
+for(const [key,value] of Object.entries(groups)) fs.writeFileSync('humanizer/batch-'+key+'.json',JSON.stringify(value,null,2)+'\n');
+console.log(Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,{count:v.length,characters:JSON.stringify(v).length,ids:v.map(a=>a.id)}])));

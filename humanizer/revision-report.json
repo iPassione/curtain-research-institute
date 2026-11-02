@@ -1,0 +1,479 @@
+[
+  {
+    "id": "origin",
+    "title": "帷幕诞生之前",
+    "originalLength": 1973,
+    "revisedLength": 1636,
+    "ratio": 0.829,
+    "originalParagraphs": 16,
+    "revisedParagraphs": 16
+  },
+  {
+    "id": "continents",
+    "title": "穹顶之下的土地",
+    "originalLength": 2829,
+    "revisedLength": 2639,
+    "ratio": 0.933,
+    "originalParagraphs": 28,
+    "revisedParagraphs": 28
+  },
+  {
+    "id": "gates",
+    "title": "界门与距离",
+    "originalLength": 2054,
+    "revisedLength": 1932,
+    "ratio": 0.941,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "stone",
+    "title": "蕴法石的旅程",
+    "originalLength": 1967,
+    "revisedLength": 1897,
+    "ratio": 0.964,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "camoria",
+    "title": "卡莫瑞亚：世界之尺",
+    "originalLength": 3848,
+    "revisedLength": 3707,
+    "ratio": 0.963,
+    "originalParagraphs": 24,
+    "revisedParagraphs": 24
+  },
+  {
+    "id": "eisen",
+    "title": "艾森洛德：工坊与秩序",
+    "originalLength": 2003,
+    "revisedLength": 1917,
+    "ratio": 0.957,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "northlands",
+    "title": "茨威尔格诺：漫长的冬天",
+    "originalLength": 1956,
+    "revisedLength": 1882,
+    "ratio": 0.962,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "esperanza",
+    "title": "埃斯佩兰萨：港口与矿脉",
+    "originalLength": 1964,
+    "revisedLength": 1853,
+    "ratio": 0.943,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "enchantevis",
+    "title": "昂尚特维斯：森林与文字",
+    "originalLength": 1968,
+    "revisedLength": 1767,
+    "ratio": 0.898,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "wands",
+    "title": "从长杖到短杖",
+    "originalLength": 2082,
+    "revisedLength": 1904,
+    "ratio": 0.915,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "alchemy",
+    "title": "炼金术的两条道路",
+    "originalLength": 2029,
+    "revisedLength": 1872,
+    "ratio": 0.923,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "tyndale-early",
+    "title": "庭代尔·克罗蒂：少年时期",
+    "originalLength": 1982,
+    "revisedLength": 1767,
+    "ratio": 0.892,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "chronicles",
+    "title": "年代之后：怎样读帷幕历史",
+    "originalLength": 2081,
+    "revisedLength": 1783,
+    "ratio": 0.857,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "history-discrete-full",
+    "title": "离散纪 · 全文",
+    "originalLength": 7034,
+    "revisedLength": 6982,
+    "ratio": 0.993,
+    "originalParagraphs": 187,
+    "revisedParagraphs": 186
+  },
+  {
+    "id": "history-nineteen-full",
+    "title": "十九家 · 全文",
+    "originalLength": 6264,
+    "revisedLength": 6211,
+    "ratio": 0.992,
+    "originalParagraphs": 184,
+    "revisedParagraphs": 183
+  },
+  {
+    "id": "casting-reference",
+    "title": "施法原理详论",
+    "originalLength": 1971,
+    "revisedLength": 1852,
+    "ratio": 0.94,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "currency-study",
+    "title": "从索比恩到加令",
+    "originalLength": 1954,
+    "revisedLength": 1859,
+    "ratio": 0.951,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "food-and-work",
+    "title": "粮食、机器与日常劳动",
+    "originalLength": 1971,
+    "revisedLength": 1893,
+    "ratio": 0.96,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "artefacts-study",
+    "title": "造物：被保存的魔力",
+    "originalLength": 1961,
+    "revisedLength": 1797,
+    "ratio": 0.916,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "treaty-study",
+    "title": "和平条约的两种约束",
+    "originalLength": 1999,
+    "revisedLength": 1903,
+    "ratio": 0.952,
+    "originalParagraphs": 17,
+    "revisedParagraphs": 17
+  },
+  {
+    "id": "ministry-government",
+    "title": "魔法联合部如何治理",
+    "originalLength": 2204,
+    "revisedLength": 2066,
+    "ratio": 0.937,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "inhabitants-history",
+    "title": "帷幕中的原住民与迁徙者",
+    "originalLength": 1965,
+    "revisedLength": 1800,
+    "ratio": 0.916,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "world-trade",
+    "title": "帷幕边界上的贸易",
+    "originalLength": 1974,
+    "revisedLength": 1847,
+    "ratio": 0.936,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "wizard-ranks-study",
+    "title": "巫师的七个阶段",
+    "originalLength": 2035,
+    "revisedLength": 1695,
+    "ratio": 0.833,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "authority-research",
+    "title": "权柄与神格",
+    "originalLength": 2738,
+    "revisedLength": 2123,
+    "ratio": 0.775,
+    "originalParagraphs": 24,
+    "revisedParagraphs": 24
+  },
+  {
+    "id": "divination-methods",
+    "title": "占卜的七种门径",
+    "originalLength": 2010,
+    "revisedLength": 1870,
+    "ratio": 0.93,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "guardian-spirits-study",
+    "title": "守护灵与契约",
+    "originalLength": 1952,
+    "revisedLength": 1730,
+    "ratio": 0.886,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "magic-disciplines-index",
+    "title": "高级魔法的三十八种体系",
+    "originalLength": 2020,
+    "revisedLength": 1804,
+    "ratio": 0.893,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "old-and-modern-spells",
+    "title": "古代魔法与现代咒语",
+    "originalLength": 1942,
+    "revisedLength": 1707,
+    "ratio": 0.879,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "soul-and-death-study",
+    "title": "灵魂、心灵与亡者",
+    "originalLength": 1961,
+    "revisedLength": 1591,
+    "ratio": 0.811,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "crotty-family-study",
+    "title": "克罗蒂：一个姓氏的重量",
+    "originalLength": 1999,
+    "revisedLength": 1737,
+    "ratio": 0.869,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "tiarnas-early-study",
+    "title": "提亚纳斯·克罗蒂",
+    "originalLength": 1979,
+    "revisedLength": 1720,
+    "ratio": 0.869,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 19
+  },
+  {
+    "id": "sinclair-study",
+    "title": "辛克莱尔·德维雷斯",
+    "originalLength": 1956,
+    "revisedLength": 1463,
+    "ratio": 0.748,
+    "originalParagraphs": 18,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "knights-community",
+    "title": "诺伐圣廷骑士团",
+    "originalLength": 2086,
+    "revisedLength": 1773,
+    "ratio": 0.85,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 21
+  },
+  {
+    "id": "ernicium-profile",
+    "title": "厄尼西姆",
+    "originalLength": 2003,
+    "revisedLength": 1460,
+    "ratio": 0.729,
+    "originalParagraphs": 17,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "galibel-profile",
+    "title": "加利贝尔",
+    "originalLength": 2024,
+    "revisedLength": 1534,
+    "ratio": 0.758,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 19
+  },
+  {
+    "id": "huffines-profile",
+    "title": "赫法恩斯",
+    "originalLength": 2075,
+    "revisedLength": 1778,
+    "ratio": 0.857,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 21
+  },
+  {
+    "id": "pridony-profile",
+    "title": "普里多尼",
+    "originalLength": 2122,
+    "revisedLength": 1821,
+    "ratio": 0.858,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 21
+  },
+  {
+    "id": "cyprus-profile",
+    "title": "塞浦路斯",
+    "originalLength": 1962,
+    "revisedLength": 1518,
+    "ratio": 0.774,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 18
+  },
+  {
+    "id": "chessia-profile",
+    "title": "切西娅",
+    "originalLength": 2003,
+    "revisedLength": 1720,
+    "ratio": 0.859,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 21
+  },
+  {
+    "id": "divination-study",
+    "title": "占卜与灵界的记录",
+    "originalLength": 2734,
+    "revisedLength": 2270,
+    "ratio": 0.83,
+    "originalParagraphs": 24,
+    "revisedParagraphs": 24
+  },
+  {
+    "id": "worlds-structure",
+    "title": "现实的层次：六大世界",
+    "originalLength": 2150,
+    "revisedLength": 1794,
+    "ratio": 0.834,
+    "originalParagraphs": 15,
+    "revisedParagraphs": 15
+  },
+  {
+    "id": "worlds-boundaries",
+    "title": "诸界之间：信息、灵魂与边界",
+    "originalLength": 2112,
+    "revisedLength": 1602,
+    "ratio": 0.759,
+    "originalParagraphs": 15,
+    "revisedParagraphs": 15
+  },
+  {
+    "id": "daily-tools",
+    "title": "一件造物如何进入日常",
+    "originalLength": 2123,
+    "revisedLength": 1833,
+    "ratio": 0.863,
+    "originalParagraphs": 15,
+    "revisedParagraphs": 15
+  },
+  {
+    "id": "daily-messages",
+    "title": "远处的消息如何抵达",
+    "originalLength": 2140,
+    "revisedLength": 1866,
+    "ratio": 0.872,
+    "originalParagraphs": 15,
+    "revisedParagraphs": 16
+  },
+  {
+    "id": "worlds-stars",
+    "title": "穹顶之外：星辰与命运的尺度",
+    "originalLength": 2719,
+    "revisedLength": 2255,
+    "ratio": 0.829,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "worlds-mirror",
+    "title": "镜面之后：窥视、伪装与替换",
+    "originalLength": 2668,
+    "revisedLength": 2386,
+    "ratio": 0.894,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "worlds-time",
+    "title": "此刻之前与之后：时间长河的边界",
+    "originalLength": 2716,
+    "revisedLength": 2118,
+    "ratio": 0.78,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 19
+  },
+  {
+    "id": "worlds-dead",
+    "title": "寂静的彼岸：亡者、回声与告别",
+    "originalLength": 2713,
+    "revisedLength": 2243,
+    "ratio": 0.827,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "daily-market",
+    "title": "柜台前的一天：零钱、赊账与买卖",
+    "originalLength": 2725,
+    "revisedLength": 2612,
+    "ratio": 0.959,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "daily-table",
+    "title": "一顿晚饭的来处：厨房、工时与家人",
+    "originalLength": 2678,
+    "revisedLength": 2492,
+    "ratio": 0.931,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "daily-journey",
+    "title": "第一次远行：行装、候门与归期",
+    "originalLength": 2718,
+    "revisedLength": 2487,
+    "ratio": 0.915,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  },
+  {
+    "id": "daily-apprentice",
+    "title": "学徒的一日：咒文、练习与收工",
+    "originalLength": 2729,
+    "revisedLength": 2598,
+    "ratio": 0.952,
+    "originalParagraphs": 20,
+    "revisedParagraphs": 20
+  }
+]
