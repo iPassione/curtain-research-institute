@@ -363,8 +363,8 @@
     "id": "divination-study",
     "title": "占卜与灵界的记录",
     "originalLength": 2734,
-    "revisedLength": 2270,
-    "ratio": 0.83,
+    "revisedLength": 2303,
+    "ratio": 0.842,
     "originalParagraphs": 24,
     "revisedParagraphs": 24
   },
@@ -372,19 +372,19 @@
     "id": "worlds-structure",
     "title": "现实的层次：六大世界",
     "originalLength": 2150,
-    "revisedLength": 1794,
-    "ratio": 0.834,
+    "revisedLength": 2002,
+    "ratio": 0.931,
     "originalParagraphs": 15,
-    "revisedParagraphs": 15
+    "revisedParagraphs": 17
   },
   {
     "id": "worlds-boundaries",
     "title": "诸界之间：信息、灵魂与边界",
     "originalLength": 2112,
-    "revisedLength": 1602,
-    "ratio": 0.759,
+    "revisedLength": 1850,
+    "ratio": 0.876,
     "originalParagraphs": 15,
-    "revisedParagraphs": 15
+    "revisedParagraphs": 16
   },
   {
     "id": "daily-tools",
@@ -408,10 +408,10 @@
     "id": "worlds-stars",
     "title": "穹顶之外：星辰与命运的尺度",
     "originalLength": 2719,
-    "revisedLength": 2255,
-    "ratio": 0.829,
+    "revisedLength": 2259,
+    "ratio": 0.831,
     "originalParagraphs": 20,
-    "revisedParagraphs": 20
+    "revisedParagraphs": 24
   },
   {
     "id": "worlds-mirror",

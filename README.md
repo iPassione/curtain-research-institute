@@ -13,7 +13,7 @@ git clone https://github.com/iPassione/curtain-research-institute.git
 cd curtain-research-institute
 ```
 
-远端 `main` 是供换机接续的最新版，包含全部 53 篇修订文章、页面、图片和编辑记录。当前网站上线内容为 Sites 第 14 版，发布源提交 `1c340851466e2fe275efcc7acb37bba5b4df5114`；其后的换机说明提交只增加文档和忽略规则。
+远端 `main` 是供换机接续的最新版，包含全部 53 篇修订文章、页面、图片和编辑记录。2026-11-03 的修订进一步调整星界与灵界的介绍，突出星界秩序及灵界的抽象概念集合体。最新发布源以 Sites 版本记录为准；第 14 版为本轮调整前的全文修订版本。
 
 准备继续修改时，从最新版开自己的工作分支，例如：
 
@@ -63,6 +63,7 @@ GitHub 推送保存源代码，不会自动更新公开网站。网站仍由 Sit
 ## 版本与恢复
 
 - `main`：GitHub 上可直接克隆的最新版。
+- `edit/worlds-focus-20261103`：星界、灵界介绍及相关总览调整。
 - `edit/humanizer-terra-20261102`：本次 Humanizer + GPT-6.1 Terra 修订及换机交接分支。
 - 标签 `before-humanizer-20261102`：修订前完整旧版，提交 `105fe4b551cec76acce98f673b1c50ce78764bb7`。
 - 网站 Sites 第 13 版同样保留修订前的在线版本。
