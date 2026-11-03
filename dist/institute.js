@@ -8,7 +8,7 @@ const chapters=a=>a.chapters?.length?a.chapters:[{heading:'正文',paragraphs:a.
 const minutes=a=>Math.max(1,Math.ceil(chapters(a).flatMap(c=>c.paragraphs).join('').length/450));
 const href=(a,from)=>`?article=${encodeURIComponent(a.id)}${from?'&from='+encodeURIComponent(from):''}`;
 const card=(a,from)=>`<a class="article-link" href="${href(a,from)}"><div class="entry-top"><small>${esc(a.eyebrow)}</small><span>${minutes(a)} 分钟</span></div><h2>${esc(a.title)}</h2><p>${esc(a.lead)}</p><span class="entry-read">阅读馆藏 <b aria-hidden="true">↗</b></span></a>`;
-const covers={history:'cover-history.webp',geography:'nautical-chart.png',magic:'cover-magic.webp',people:'cover-people.webp',worlds:'cover-worlds.webp',daily:'cover-daily.webp'};
+const covers={history:'cover-history-oil.webp',geography:'nautical-chart.png',magic:'cover-magic-oil.webp',people:'cover-people.webp',worlds:'cover-worlds-oil.webp',daily:'cover-daily-oil.webp'};
 const featuredIds={history:'history-discrete-full',geography:'continents',magic:'wizard-ranks-study',people:'knights-community',library:'history-nineteen-full',worlds:'worlds-structure',daily:'daily-table'};
 document.body.dataset.surface=article?'article':section?'collection':'home';document.body.dataset.collection=page||collection||'';
 if(article){
