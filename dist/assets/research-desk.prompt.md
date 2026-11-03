@@ -1,0 +1,5 @@
+# Research desk
+
+Generated with the built-in ImageGen tool for the institute redesign.
+
+Prompt: Create a photorealistic editorial still life for an imaginary historical magical research institute website. Landscape 3:2. An archivist's empty working table in a dark old European natural history library at night: a large open antique portolan nautical map on ivory parchment spread across lower right, a closed deep bottle-green clothbound folio lower left, a small intricate brass armillary sphere on upper right, one clear quartz mineral beside handwritten folio pages. Real paper and worn book cloth, precise restrained brass instruments. Raking warm side light from left, dark green black shadows in background, soft warm off-white highlights. Museum exhibition photography, tactile, scholarly, cinematic but quiet, rich believable details, 50mm lens. No people, no glowing magic, no candles, no readable text, no letters, no UI, no typography. Wide composition with generous dark negative space at upper left.

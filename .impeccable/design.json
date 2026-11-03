@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00+08:00",
+  "title": "Design System: 帷幕研究所",
+  "extensions": {
+    "shadows": [{"name":"mobile-menu","value":"0 15px 25px #0c282430","purpose":"窄屏展开导航与下方内容分层"}],
+    "motion": [
+      {"name":"state-transition","value":"0.2s","purpose":"动作背景与条目标题状态变化"},
+      {"name":"room-transition","value":"0.25s","purpose":"方向入口色面与箭头变化"},
+      {"name":"hero-entrance","value":"1.2s expo.out; stagger 0.1s","purpose":"首页标题组单次进入，内容默认可见"},
+      {"name":"reduced-motion","value":"prefers-reduced-motion: reduce","purpose":"禁用CSS动画和过渡，跳过首页GSAP，取消平滑滚动"}
+    ],
+    "breakpoints": [
+      {"name":"wide-adjustment","value":"1150px"},
+      {"name":"navigation-and-reading-stack","value":"850px"},
+      {"name":"phone","value":"550px"}
+    ]
+  },
+  "components": [
+    {"name":"主行动","kind":"button","refersTo":"button-primary","description":"书页浅金底，带方向提示的主要入口","html":"<a class=\"ds-action\" href=\"#\">走进研究所 <span>↘</span></a>","css":".ds-action{display:inline-flex;gap:40px;align-items:center;background:var(--action,#e7d5a7);color:var(--action-ink,#173d32);padding:17px 24px;font:13px 'Noto Sans SC',sans-serif;text-decoration:none;transition:background .2s}.ds-action:hover{background:#f6e9c7}.ds-action:focus-visible{outline:2px solid #b0853e;outline-offset:5px}"},
+    {"name":"文字入口","kind":"button","description":"带细下划线的次级导航","html":"<a class=\"ds-text-link\" href=\"#\">查阅全部馆藏 ↗</a>","css":".ds-text-link{display:inline-block;color:var(--ink,#203c35);font:13px/1.6 'Noto Sans SC',sans-serif;padding:9px 0;border-bottom:1px solid currentColor;text-decoration:none}.ds-text-link:hover{color:#93713d}.ds-text-link:focus-visible{outline:2px solid #b0853e;outline-offset:5px}"},
+    {"name":"馆藏检索","kind":"input","refersTo":"input-search","description":"透明书页背景与细底线","html":"<label class=\"ds-search\">检索馆藏<input placeholder=\"搜索标题、主题或正文…\" type=\"search\"></label>","css":".ds-search{display:block;font:12px 'Noto Sans SC',sans-serif;color:#61705b}.ds-search input{display:block;width:100%;margin-top:12px;padding:15px 0;border:0;border-bottom:1px solid #929f89;border-radius:0;background:transparent;color:var(--ink,#203c35);font:16px 'Noto Sans SC',sans-serif}.ds-search input::placeholder{color:#64715d}.ds-search input:focus-visible{outline:2px solid #b0853e;outline-offset:5px}"},
+    {"name":"馆藏导航","kind":"nav","description":"当前领域以金色和下划线识别","html":"<nav class=\"ds-nav\"><a href=\"#\">历史</a><a href=\"#\" aria-current=\"page\">地理与文明</a><a href=\"#\">魔法</a></nav>","css":".ds-nav{display:flex;gap:25px;padding:20px;background:var(--deep,#0c2824);font:12px 'Noto Sans SC',sans-serif}.ds-nav a{padding:18px 0;color:#d4ded3;text-decoration:none}.ds-nav a:hover,.ds-nav a[aria-current]{color:#efd49b}.ds-nav a[aria-current]{text-decoration:underline;text-underline-offset:10px}.ds-nav a:focus-visible{outline:2px solid #b0853e;outline-offset:5px}"},
+    {"name":"文章条目","kind":"card","description":"以开放分隔线呈现主题、时长、标题和提要","html":"<a class=\"ds-entry\" href=\"#\"><small>地方志 / 中央大陆</small><h2>卡莫瑞亚：世界之尺</h2><p>循着城市、工坊与公共机构，认识中央大陆。</p><span>阅读馆藏 ↗</span></a>","css":".ds-entry{display:block;padding:30px 0 36px;border-top:1px solid var(--rule,#c8cbbd);color:var(--ink,#203c35);text-decoration:none}.ds-entry small,.ds-entry span{font:11px 'Noto Sans SC',sans-serif;color:#626c56}.ds-entry h2{font:500 26px/1.55 'Noto Serif SC',serif;margin:20px 0 14px;transition:color .2s}.ds-entry p{font:14px/2 'Noto Serif SC',serif;color:var(--muted,#52645a);margin:0 0 25px}.ds-entry:hover h2{color:#93713d}.ds-entry:focus-visible{outline:2px solid #b0853e;outline-offset:5px}"}
+  ],
+  "narrative": {
+    "northStar": "夜间开放的研究图志",
+    "overview": "研究所的前端以深绿书封和浅色书页组织不同阅读场景。穹顶观测图、航海图和研究桌是实际使用的图像资产；器物感来自图像、细边线与方正版面，而不是在正文后叠加纹理。",
+    "keyCharacteristics": ["深色导览与浅色正文形成清楚的场景切换。","中文衬线字体承载标题和正文，无衬线字体承载导航与控制。","文章条目采用开放式分隔线，主方向入口采用书封式色块。","铜金色用于索引、选中和行动提示。"],
+    "rules": [],
+    "dos": ["Do 根据已实现的颜色变量和两个字体角色扩展页面。","Do 为长文保留完整内容、清楚目录和有节奏的章节分隔。","Do 同时检查桌面与窄屏，保留搜索、地图与专题工具的状态反馈。","Do 为键盘焦点提供可见样式，并尊重减弱动态偏好。"],
+    "donts": ["Don't 在正文背景增加妨碍阅读的装饰纹理。","Don't 把馆藏摘要当作正文的替代物。","Don't 用全局排版调整破坏专项地图和图解的定位。","Don't 依赖动画完成内容显示或基本导航。"]
+  }
+}

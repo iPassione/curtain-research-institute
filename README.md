@@ -41,6 +41,8 @@ node build-humanized.cjs
 
 ## 本地阅览
 
+前端视觉已在 2026-11-03 重做。入口是 `dist/index.html`，当前页面渲染使用 `dist/institute.js`，统一样式使用 `dist/institute.css`。`visual-atlas`、`nautical-map` 和 `collections` 文件负责各馆的专项互动。旧 `app.js` 与 `style.css` 已退出入口加载，保留作历史参考。产品约束见 `PRODUCT.md`，视觉规则见 `DESIGN.md`。新增研究桌图像与生成提示保存在 `dist/assets/`。
+
 这是静态网站，无需安装项目依赖。装有 Python 时，在仓库目录运行：
 
 ```sh
