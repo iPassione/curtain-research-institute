@@ -7,7 +7,7 @@ let exhibits=fs.readFileSync('dist/exhibit-data.js','utf8');
 for(const [oldId,newId] of Object.entries({tools:'wands',spellstone:'stone',industry:'food-and-work',trade:'world-trade',artifacts:'artefacts-study','unity-ministry':'ministry-government'}))exhibits=exhibits.replaceAll("'"+oldId+"'","'"+newId+"'");
 fs.writeFileSync('dist/exhibit-data.js',exhibits);
 let ui=fs.readFileSync('dist/fieldrooms.js','utf8');
-ui=ui.replace('class="field-entrances"','class="field-entrances" id="fieldrooms"');
+if(!ui.includes('id="fieldrooms"'))ui=ui.replace('class="field-entrances"','class="field-entrances" id="fieldrooms"');
 ui=ui.replace("cs=view==='use'?a.chapters:[{title:'展品记录',paragraphs:[a.chapters[1].paragraphs[0],`本件研究依据《${a.sources.join('》《')}》。展览沿这些资料追索器物的制作、使用与后续流转。`]}]","cs=view==='use'?[a.chapters[0]]:[a.chapters[1],{title:'展品记录',paragraphs:[`资料：${a.sources.join(' · ')}。`]}]");
 ui=ui.replace("root.querySelector('.travel-copy');",'');
 ui=ui.replace("'跨海的行程把出发与抵达分成几段。先到交通节点，再为远处的一程安排接续。'","(mode==='gate'?'从住处走到界门，再从另一端赶往落脚的城市。门槛连接远方，两端仍有人间的道路。':'跨海的行程把出发与抵达分成几段。先到交通节点，再为远处的一程安排接续。')");

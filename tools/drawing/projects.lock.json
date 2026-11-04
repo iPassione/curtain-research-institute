@@ -1,0 +1,42 @@
+{
+  "root": "D:/CurtainDrawingTools",
+  "repositories": [
+    {
+      "name": "three.js",
+      "url": "https://github.com/mrdoob/three.js.git",
+      "license": "MIT",
+      "commit": "c6a4b78be1a3d7839399410cc157950c5fd6e58b",
+      "sparse": [
+        "build",
+        "src"
+      ]
+    },
+    {
+      "name": "maker.js",
+      "url": "https://github.com/microsoft/maker.js.git",
+      "license": "Apache-2.0",
+      "commit": "dc11e2645f363c0f0a2d1461ae7469fb13bb8678",
+      "sparse": null
+    },
+    {
+      "name": "rough",
+      "url": "https://github.com/rough-stuff/rough.git",
+      "license": "MIT",
+      "commit": "56a2762171b1294d643501e8d14f120db6b27bd7",
+      "sparse": null
+    },
+    {
+      "name": "zdog",
+      "url": "https://github.com/metafizzy/zdog.git",
+      "license": "MIT",
+      "commit": "dde8684be686bc6d3cbedb6be49875c0a03a14c0",
+      "sparse": null
+    }
+  ],
+  "runtime": {
+    "three": "0.187.0",
+    "makerjs": "0.19.2",
+    "roughjs": "4.6.6",
+    "zdog": "1.1.3"
+  }
+}
