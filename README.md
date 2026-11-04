@@ -23,6 +23,8 @@ git switch -c edit/article-review
 
 ## 修改文章
 
+新增的造物陈列室、五大陆旅行案头和城市切片见 `FIELDROOMS.md`。三个展室的文字数据直接在 `dist/exhibit-data.js`、`dist/travel-data.js`、`dist/street-data.js` 中编辑。
+
 - 当前生效的修订稿：`humanizer/revised/<文章ID>.json`，一篇一个文件。
 - 可编辑字段：`subtitle`、`lead`、`chapters`；每章包含 `heading` 和 `paragraphs`。
 - 保留 `id`，文章链接、篇名、馆藏归属和引用笔记名由原始文章数据提供。
