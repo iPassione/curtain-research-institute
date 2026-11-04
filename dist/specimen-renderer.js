@@ -47,11 +47,11 @@
         const disk=cyl(.24,.27,.06,brass,0,.38,.38);torus(.17,.012,glow,0,.419,.38).rotation.x=-Math.PI/2;
       }else if(kind==='wand'||kind==='staff'){
         base();const p=new T.Group();group.add(p);p.position.set(0,2.05,0);p.rotation.z=kind==='wand'?-.61:-.28;
-        const h=kind==='wand'?2.75:3.35;cyl(.035,.095,h,wood,0,0,0,p);cyl(.105,.12,.75,leather,0,-h/2+.4,0,p);
-        for(let i=0;i<15;i++){const ring=torus(.11,.009,i%4===0?brass:darkBrass,0,-h/2+.07+i*.045,0,p);ring.rotation.x=Math.PI/2;}
-        for(const y of [-h/2,-h/2+.8])cyl(.13,.13,.07,brass,0,y,0,p);
-        cyl(.055,.07,.18,brass,0,h/2-.05,0,p);add(new T.OctahedronGeometry(kind==='staff'?.25:.08,0),glow,0,h/2+.1,0,p);
-        if(kind==='staff'){for(let i=0;i<4;i++){const a=i*Math.PI/2;line([[Math.cos(a)*.06,h/2-.22,Math.sin(a)*.06],[Math.cos(a)*.30,h/2+.06,Math.sin(a)*.30],[Math.cos(a)*.16,h/2+.43,Math.sin(a)*.16]],brass,.025,p);}cyl(.12,.09,.1,brass,0,h/2-.23,0,p);}
+        // Ordinary casting wands/staves have an entirely wooden exterior.
+        // Gem-set implements belong to the artefact category, not these samples.
+        const h=kind==='wand'?2.75:3.35;
+        const profile=[[0,-h/2],[.075,-h/2+.012],[.09,-h/2+.05],[.095,-h/2+.18],[.09,-h/2+.46],[.075,-h/2+.65],[.065,-h/2+.85],[.055,h/2-.30],[.048,h/2-.12],[.032,h/2-.035],[0,h/2]];
+        add(new T.LatheGeometry(profile.map(([r,y])=>new T.Vector2(r,y)),48),wood,0,0,0,p);
         for(const y of [.57,1.65]){box(.08,.1,.12,darkBrass,0,y,-.12);box(.09,y,.08,darkBrass,0,y/2,-.3);}
       }else if(kind==='stone'||kind==='spent'){
         base();cyl(.95,1.10,.32,stoneDark,0,.34,0);cyl(.99,.99,.04,brass,0,.52,0);
