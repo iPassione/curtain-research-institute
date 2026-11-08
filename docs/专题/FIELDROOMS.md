@@ -28,6 +28,6 @@
 
 ## 器物图重绘 · 2026-11-04
 
-分支 `feat/specimen-illustrations-20261104` 用原创 Three.js 模型替换六件器物的旧 SVG 轮廓，增加旋转、复位与结构图版切换。Maker.js 生成正面线稿，Rough.js 生成淡排线。四个项目（含备用 Zdog）下载在 D 盘，跨电脑恢复与固定版本见 [绘图工具说明](tools/drawing/README.md)。
+分支 `feat/specimen-illustrations-20261104` 用原创 Three.js 模型替换六件器物的旧 SVG 轮廓，增加旋转、复位与结构图版切换。Maker.js 生成正面线稿，Rough.js 生成淡排线。四个项目（含备用 Zdog）下载在 D 盘，跨电脑恢复与固定版本见 [绘图工具说明](../../tools/drawing/README.md)。
 
 本次未添加或运行自动测试套件，采用本地浏览器查看页面与交互；源代码与静态资源由 Sites 工作流共同提交和打包。

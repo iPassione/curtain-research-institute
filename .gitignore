@@ -1,11 +1,27 @@
-# Local tooling and preview state
+# Dependencies and local development environments
 node_modules/
 .venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+
+# OS/editor state and temporary files
 .DS_Store
 Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*~
+.cache/
+coverage/
+playwright-report/
+test-results/
+.codex-tmp*/
 
 # Credentials and local configuration
 .env
@@ -13,7 +29,16 @@ Thumbs.db
 !.env.example
 *.pem
 *.key
+*.p12
+*.pfx
+.openai/*
+!.openai/hosting.json
 
-# Locally packaged deployments
+# Local export bundles
+/exports/
 *.tar.gz
 *.tgz
+*.zip
+*.7z
+
+# Intentionally track dist/: editable static website and deployable assets.
