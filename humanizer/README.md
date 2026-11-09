@@ -1,5 +1,11 @@
 # 2026-11-02 全馆 Humanizer 修订
 
+## 2026-11-09 第二轮：R3 文章重修
+
+用户选定 R3 墨色展厅，并要求重写仍显生硬的文章，尤其是标题与序言。本轮分支为 `edit/r3-editorial-humanizer-terra-20261109`，由 Terra 配合 Humanizer 分三批修订 53 篇。标题现可随修订稿更新；文章 ID、分类、来源和链接仍由原始数据维护。
+
+`round2/current-before.json` 保存此次施工前的有效全文，`round2/audit-*.md` 记录编辑判断。`prepare-round2.cjs` 仅用于首次保存快照，请勿在修订后重复运行。重建后可运行 `node humanizer/audit-round2.cjs` 检查数量、元数据和篇幅变化；该报告不能代替逐篇审读。
+
 ## 恢复点
 
 原版提交：`105fe4b551cec76acce98f673b1c50ce78764bb7`。
