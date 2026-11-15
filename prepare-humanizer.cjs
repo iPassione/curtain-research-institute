@@ -2,7 +2,7 @@ const fs = require('fs');
 const vm = require('vm');
 const context = {window:{}};
 vm.createContext(context);
-for (const file of ['catalogue.js','collection-content.js','collection-longform.js']) vm.runInContext(fs.readFileSync('dist/'+file,'utf8'),context);
+for (const file of ['generated/catalogue.js','collection-content.js','generated/collection-longform.js']) vm.runInContext(fs.readFileSync('content/'+file,'utf8'),context);
 fs.mkdirSync('humanizer/revised',{recursive:true});
 const articles=context.window.CURTAIN_CONTENT.articles;
 fs.writeFileSync('humanizer/baseline-articles.json',JSON.stringify(articles,null,2)+'\n');

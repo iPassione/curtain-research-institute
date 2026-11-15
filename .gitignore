@@ -25,3 +25,5 @@ playwright-report/
 tests/visual/baseline-shots/
 tests/visual/current/
 tests/visual/diff/
+public/data/
+public/assets/
