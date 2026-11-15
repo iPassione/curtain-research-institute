@@ -1,0 +1,6 @@
+/* V3 地基新增：只放不影响视觉的基础规则。 */
+@layer base {
+/* <picture> 只是 AVIF/WebP 的格式选择包装，不生成盒子，<img> 的布局与改造前相同。 */
+picture{display:contents}
+picture>source{display:none}
+}

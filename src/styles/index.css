@@ -1,0 +1,16 @@
+/* 层叠顺序
+   base   V3 新增的基础规则（目前只有 <picture> 包装）。
+   site   V3 之前的六个样式表，按原加载顺序：visual-atlas、nautical-map、collections、institute、fieldrooms、veil。
+          六个文件放在同一层里，层内仍按“特异性优先、其次先后”层叠，与改造前逐条一致。
+          若拆成每个文件一层，后一层会无视特异性整体覆盖前一层：例如 institute 的 p{line-height:1.9}
+          会压过 visual-atlas 更具体的 .atlas-heading>p{line-height:2}，改变观感。
+          按 tokens / base / shell / read / exhibits / veil 细分，需要先理清这些跨文件覆盖，留到改版式的阶段进行。
+   之后阶段新增的样式放在 site 之后的层里。 */
+@layer base, site;
+@import './base.css';
+@import './visual-atlas.css';
+@import './nautical-map.css';
+@import './collections.css';
+@import './institute.css';
+@import './fieldrooms.css';
+@import './veil.css';

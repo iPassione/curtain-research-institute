@@ -4,7 +4,16 @@
   "version": "3.0.0-foundation",
   "type": "module",
   "license": "UNLICENSED",
-  "scripts": {},
+  "scripts": {
+    "content": "node build-editorial.mjs && node build-collections.mjs && node build-humanized.cjs && node scripts/build-content.mjs",
+    "build:content": "node scripts/build-content.mjs",
+    "build:images": "node scripts/build-images.mjs",
+    "build": "node scripts/build-content.mjs && node scripts/build-images.mjs && tsc && vite build",
+    "dev": "node scripts/build-content.mjs && vite",
+    "preview": "node scripts/serve.mjs dist 8765",
+    "verify:content": "node scripts/verify-content.mjs",
+    "test": "playwright test"
+  },
   "dependencies": {
     "gsap": "3.14.2"
   },

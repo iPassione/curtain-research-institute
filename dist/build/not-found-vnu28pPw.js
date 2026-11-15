@@ -1,0 +1,1 @@
+function e(e){e.main.innerHTML=`<section class="not-found"><p>馆藏索引</p><h1>这条线索暂时中断了。</h1><p>你可以在公共阅览室继续查找相关资料。</p><a class="action" href="?page=library">前往阅览室 ↗</a></section>`}export{e as renderNotFound};
