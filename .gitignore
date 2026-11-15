@@ -17,3 +17,11 @@ Thumbs.db
 # Locally packaged deployments
 *.tar.gz
 *.tgz
+
+# Playwright output
+test-results/
+playwright-report/
+.baseline-server/
+tests/visual/baseline-shots/
+tests/visual/current/
+tests/visual/diff/

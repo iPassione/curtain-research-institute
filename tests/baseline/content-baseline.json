@@ -1,0 +1,398 @@
+{
+  "note": "改造前（359d11a）运行时合并后的内容基线。由 scripts/export-content-baseline.mjs 生成，不要手改。",
+  "count": 53,
+  "articles": [
+    {
+      "id": "origin",
+      "title": "帷幕诞生之前",
+      "chapters": 5,
+      "paragraphs": 16,
+      "fingerprint": "bdc73fa0c8f79bd9"
+    },
+    {
+      "id": "continents",
+      "title": "穹顶之下的土地",
+      "chapters": 7,
+      "paragraphs": 28,
+      "fingerprint": "ae283b542ef38525"
+    },
+    {
+      "id": "gates",
+      "title": "界门与距离",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "91f7f13931d5c58e"
+    },
+    {
+      "id": "stone",
+      "title": "蕴法石的旅程",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "962c8ef6ace8eb89"
+    },
+    {
+      "id": "camoria",
+      "title": "卡莫瑞亚：世界之尺",
+      "chapters": 6,
+      "paragraphs": 24,
+      "fingerprint": "ad3534a52240aef8"
+    },
+    {
+      "id": "eisen",
+      "title": "艾森洛德：工坊与秩序",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "6bf60976f7fcbac8"
+    },
+    {
+      "id": "northlands",
+      "title": "茨威尔格诺：漫长的冬天",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "ab42a7421cc761d5"
+    },
+    {
+      "id": "esperanza",
+      "title": "埃斯佩兰萨：港口与矿脉",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "ebe14b4ff2b97a18"
+    },
+    {
+      "id": "enchantevis",
+      "title": "昂尚特维斯：森林与文字",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "9b051e3de45abfe1"
+    },
+    {
+      "id": "wands",
+      "title": "从长杖到短杖",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "33a45fd38ac9e817"
+    },
+    {
+      "id": "alchemy",
+      "title": "炼金术的两条道路",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "a6e3375d41bcaadd"
+    },
+    {
+      "id": "tyndale-early",
+      "title": "庭代尔·克罗蒂：少年时期",
+      "chapters": 5,
+      "paragraphs": 18,
+      "fingerprint": "4eeef490ca6c76bd"
+    },
+    {
+      "id": "chronicles",
+      "title": "年代之后：怎样读帷幕历史",
+      "chapters": 6,
+      "paragraphs": 18,
+      "fingerprint": "45a7063eb4980c37"
+    },
+    {
+      "id": "history-discrete-full",
+      "title": "离散纪 · 全文",
+      "chapters": 9,
+      "paragraphs": 186,
+      "fingerprint": "c0cb8c643ad4fb94"
+    },
+    {
+      "id": "history-nineteen-full",
+      "title": "十九家 · 全文",
+      "chapters": 8,
+      "paragraphs": 183,
+      "fingerprint": "08226337898f3b34"
+    },
+    {
+      "id": "casting-reference",
+      "title": "施法原理详论",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "586faa775382bd7c"
+    },
+    {
+      "id": "currency-study",
+      "title": "从索比恩到加令",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "eb0fe51ad4a38d9f"
+    },
+    {
+      "id": "food-and-work",
+      "title": "粮食、机器与日常劳动",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "c1d7e136c16b09ab"
+    },
+    {
+      "id": "artefacts-study",
+      "title": "造物：被保存的魔力",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "398568d1239f4f3f"
+    },
+    {
+      "id": "treaty-study",
+      "title": "和平条约的两种约束",
+      "chapters": 6,
+      "paragraphs": 17,
+      "fingerprint": "b38eef9bebc2d340"
+    },
+    {
+      "id": "ministry-government",
+      "title": "魔法联合部如何治理",
+      "chapters": 6,
+      "paragraphs": 18,
+      "fingerprint": "0d15f6b401ccfb18"
+    },
+    {
+      "id": "inhabitants-history",
+      "title": "帷幕中的原住民与迁徙者",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "2c978d3289d54efd"
+    },
+    {
+      "id": "world-trade",
+      "title": "帷幕边界上的贸易",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "71ec4ce8c7169d27"
+    },
+    {
+      "id": "wizard-ranks-study",
+      "title": "巫师的七个阶段",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "57eda01d646aff6f"
+    },
+    {
+      "id": "authority-research",
+      "title": "权柄与神格",
+      "chapters": 6,
+      "paragraphs": 24,
+      "fingerprint": "e5ced6a2b6301d29"
+    },
+    {
+      "id": "divination-methods",
+      "title": "占卜的七种门径",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "64cc0d9089c5bcd0"
+    },
+    {
+      "id": "guardian-spirits-study",
+      "title": "守护灵与契约",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "19cb7ecabb297f26"
+    },
+    {
+      "id": "magic-disciplines-index",
+      "title": "高级魔法的三十八种体系",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "a5fac1e87a1ace1d"
+    },
+    {
+      "id": "old-and-modern-spells",
+      "title": "古代魔法与现代咒语",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "5666941e6c8f8939"
+    },
+    {
+      "id": "soul-and-death-study",
+      "title": "灵魂、心灵与亡者",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "f9fe5551712c0dca"
+    },
+    {
+      "id": "crotty-family-study",
+      "title": "克罗蒂：一个姓氏的重量",
+      "chapters": 5,
+      "paragraphs": 18,
+      "fingerprint": "46d7198c8a62a9f8"
+    },
+    {
+      "id": "tiarnas-early-study",
+      "title": "提亚纳斯·克罗蒂",
+      "chapters": 5,
+      "paragraphs": 19,
+      "fingerprint": "99634da3525befdc"
+    },
+    {
+      "id": "sinclair-study",
+      "title": "辛克莱尔·德维雷斯",
+      "chapters": 5,
+      "paragraphs": 18,
+      "fingerprint": "2c425ba093ed05be"
+    },
+    {
+      "id": "knights-community",
+      "title": "诺伐圣廷骑士团",
+      "chapters": 5,
+      "paragraphs": 21,
+      "fingerprint": "cf9499ace26272e7"
+    },
+    {
+      "id": "ernicium-profile",
+      "title": "厄尼西姆",
+      "chapters": 5,
+      "paragraphs": 18,
+      "fingerprint": "8ddccdf5bdc5f497"
+    },
+    {
+      "id": "galibel-profile",
+      "title": "加利贝尔",
+      "chapters": 5,
+      "paragraphs": 19,
+      "fingerprint": "72dfd2652969f117"
+    },
+    {
+      "id": "huffines-profile",
+      "title": "赫法恩斯",
+      "chapters": 5,
+      "paragraphs": 21,
+      "fingerprint": "325e36e391561548"
+    },
+    {
+      "id": "pridony-profile",
+      "title": "普里多尼",
+      "chapters": 5,
+      "paragraphs": 21,
+      "fingerprint": "73937020e54efa5c"
+    },
+    {
+      "id": "cyprus-profile",
+      "title": "塞浦路斯",
+      "chapters": 5,
+      "paragraphs": 18,
+      "fingerprint": "6752a097f6bd09d4"
+    },
+    {
+      "id": "chessia-profile",
+      "title": "切西娅",
+      "chapters": 5,
+      "paragraphs": 21,
+      "fingerprint": "34c60d082c1b4893"
+    },
+    {
+      "id": "divination-study",
+      "title": "占卜与灵界的记录",
+      "chapters": 6,
+      "paragraphs": 24,
+      "fingerprint": "2de4eb06086283bd"
+    },
+    {
+      "id": "worlds-structure",
+      "title": "现实的层次：六大世界",
+      "chapters": 5,
+      "paragraphs": 17,
+      "fingerprint": "b3c79a5bca5a742f"
+    },
+    {
+      "id": "worlds-boundaries",
+      "title": "诸界之间：信息、灵魂与边界",
+      "chapters": 5,
+      "paragraphs": 16,
+      "fingerprint": "c113168702791aa8"
+    },
+    {
+      "id": "daily-tools",
+      "title": "一件造物如何进入日常",
+      "chapters": 5,
+      "paragraphs": 15,
+      "fingerprint": "4c2460e4134363db"
+    },
+    {
+      "id": "daily-messages",
+      "title": "远处的消息如何抵达",
+      "chapters": 5,
+      "paragraphs": 16,
+      "fingerprint": "7b3be792b3006942"
+    },
+    {
+      "id": "worlds-stars",
+      "title": "穹顶之外：星辰与命运的尺度",
+      "chapters": 5,
+      "paragraphs": 23,
+      "fingerprint": "7033b8b6cd60e679"
+    },
+    {
+      "id": "worlds-mirror",
+      "title": "镜面之后：窥视、伪装与替换",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "c18b2785cc39db13"
+    },
+    {
+      "id": "worlds-time",
+      "title": "此刻之前与之后：时间长河的边界",
+      "chapters": 5,
+      "paragraphs": 19,
+      "fingerprint": "39b759a37d733826"
+    },
+    {
+      "id": "worlds-dead",
+      "title": "寂静的彼岸：亡者、回声与告别",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "56acbc1e4a686876"
+    },
+    {
+      "id": "daily-market",
+      "title": "柜台前的一天：零钱、赊账与买卖",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "9186bc7fd50025c9"
+    },
+    {
+      "id": "daily-table",
+      "title": "一顿晚饭的来处：厨房、工时与家人",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "ea534476d16e2e72"
+    },
+    {
+      "id": "daily-journey",
+      "title": "第一次远行：行装、候门与归期",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "4f0d8f8164bd7f98"
+    },
+    {
+      "id": "daily-apprentice",
+      "title": "学徒的一日：咒文、练习与收工",
+      "chapters": 5,
+      "paragraphs": 20,
+      "fingerprint": "7e6b64d33511eec1"
+    }
+  ],
+  "sections": "0f8a6f6d27d45ed1",
+  "timeline": "79a79414a4400efd",
+  "regions": "464cee6c742887ab",
+  "institute": "8db45a00e0966c2c",
+  "aliases": {
+    "migration": "history-discrete-full",
+    "nobility": "history-nineteen-full",
+    "ministry": "ministry-government",
+    "noble-house-records": "history-nineteen-full",
+    "livelihood": "food-and-work",
+    "casting": "casting-reference",
+    "traditions": "magic-disciplines-index",
+    "divination-records": "divination-study",
+    "families": "crotty-family-study",
+    "reading": "chronicles"
+  },
+  "fieldrooms": {
+    "exhibits": "201ec99ef1a40b4c",
+    "travel": "540d44262e6ce94f",
+    "street": "dffd630389b33fc6"
+  }
+}
