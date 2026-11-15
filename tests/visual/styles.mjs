@@ -12,6 +12,7 @@ const result = {};
 for (const [label, width, height] of widths) {
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, locale: 'zh-CN', reducedMotion: 'reduce' });
   for (const [name, url] of urls) {
+    if (process.env.ONLY && !new RegExp(process.env.ONLY).test(name)) continue;
     const page = await context.newPage();
     await page.goto(base + url);
     await page.waitForLoadState('networkidle');

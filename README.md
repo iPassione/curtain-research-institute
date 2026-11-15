@@ -21,9 +21,17 @@ cd curtain-research-institute
 git switch -c edit/article-review
 ```
 
-## 修改文章
+## 准备环境
 
-新增的造物陈列室、五大陆旅行案头和城市切片见 `FIELDROOMS.md`。三个展室的文字数据直接在 `dist/exhibit-data.js`、`dist/travel-data.js`、`dist/street-data.js` 中编辑。
+2026-11-15 起（V3 地基，分支 `feat/v3-foundation`），网站由 Vite + TypeScript 构建。装好 Node.js 22 或更新版本后，在仓库目录安装一次依赖：
+
+```sh
+npm install
+```
+
+依赖版本在 `package.json` 中锁定。运行冒烟测试前还需安装一次测试浏览器：`npx playwright install chromium`。
+
+## 修改文章
 
 - 当前生效的修订稿：`humanizer/revised/<文章ID>.json`，一篇一个文件。
 - 可编辑字段：`subtitle`、`lead`、`chapters`；每章包含 `heading` 和 `paragraphs`。
@@ -31,27 +39,69 @@ git switch -c edit/article-review
 - `humanizer/baseline-articles.json` 是本轮修订前的全文快照，供对照，不要覆盖。
 - 原始 Obsidian 知识库没有打包进仓库；现有文章、来源笔记名和编辑背景已包含在内。如需查阅未公开的完整设定，需在另一台电脑单独同步原库。
 
-装好 Node.js 后，在仓库目录生成网页使用的正文：
+改完 JSON 后，和以前一样运行对应的生成脚本，再构建网站：
 
 ```sh
 node build-humanized.cjs
+npm run build
 ```
 
-该命令更新 `dist/humanized-articles.js` 和 `humanizer/revision-report.json`。提交文章修改时，将对应 JSON 和这两个生成文件一起提交。直接修改 `dist/humanized-articles.js` 的内容会在下次生成时被覆盖。
+三个生成脚本与各自的源稿：
 
-`prepare-humanizer.cjs` 是首次导出旧版快照的工具；`humanizer/owner-polish.cjs` 和 `humanizer/final-review.cjs` 是已经执行的一次性编辑记录。继续审稿时无需运行这三个文件。
+| 脚本 | 源稿 | 生成 |
+| --- | --- | --- |
+| `node build-humanized.cjs` | `humanizer/revised/*.json` | `content/generated/humanized-articles.js`、`humanizer/revision-report.json` |
+| `node build-collections.mjs` | `collection-longform.json`、`collection-expansions.json` | `content/generated/collection-longform.js` |
+| `node build-editorial.mjs` | `editorial-*.json`、`content/legacy/*.js` | `content/generated/catalogue.js`、`editorial-audit.json`、`editorial-additions.json` |
+
+不确定改了哪类源稿时，`npm run content` 会依次运行这三个脚本并整理馆藏数据。`npm run build` 再把馆藏拆成目录清单与每篇一个 JSON（`scripts/build-content.mjs`，修订稿在这一步合并）、生成图片、编译页面，结果写入 `dist/`。提交文章修改时，把改过的 JSON、`content/generated/` 下对应的生成文件和 `dist/` 一起提交。直接修改 `content/generated/` 或 `dist/` 的内容会在下次生成时被覆盖。
+
+`prepare-humanizer.cjs` 是首次导出旧版快照的工具；`humanizer/owner-polish.cjs`、`humanizer/final-review.cjs`、`connect-fieldrooms.cjs`、`revise-worlds-focus.cjs` 是已经执行的一次性编辑记录，后两个仍指向 V3 之前的 `dist/` 路径。继续审稿时无需运行这些文件。
+
+### 展室与栏目数据
+
+- 三间展室：`content/fieldrooms/exhibit-data.js`、`travel-data.js`、`street-data.js`，直接编辑，然后 `npm run build`。
+- 诸界观测、巫师日常两个栏目与四篇正文：`content/collection-content.js`。
+- 两个栏目里交互面板的文字（六大世界、生活专题、货币换算）写在 `src/features/collections.ts`；方位图、施法阶段与人物关系写在 `src/features/atlas.ts`。
+
+### 迁移断言
+
+`tests/baseline/content-baseline.json` 记录了 V3 迁移前 53 篇文章的标题、章节数、段落数与全文指纹。`npm run verify:content` 检查当前构建与它逐篇一致，用来确认迁移没有改动内容。它只服务于这次迁移验收：之后有意修改正文，被改的文章会在这里报出差异，属于预期结果，日常改稿不必运行。
+
+## 目录
+
+| 位置 | 内容 |
+| --- | --- |
+| `index.html`、`src/` | 页面入口与源码：`router.ts`（单页路由）、`routes/`（首页、馆藏、文章、未找到）、`features/`（航海图、施法、人物、诸界、日常、展室）、`styles/` |
+| `content/` | 馆藏与展室数据，以及三个生成脚本的产物 |
+| `assets-src/` | 原始图片（PNG、WebP）与 SVG 图版；`npm run build` 生成 AVIF/WebP 多尺寸版本，原图不进入 `dist/` |
+| `public/` | 原样复制进站点的文件：自托管字体 `fonts/`、第三方许可 `vendor/licenses/` |
+| `scripts/` | 内容、图片构建，本地静态服务，基线导出与断言 |
+| `tests/` | Playwright 冒烟测试与改造前后截图比对工具 |
+| `dist/` | 构建产物，也是 Sites 发布的静态目录，提交进仓库 |
 
 ## 本地阅览
 
-前端视觉已在 2026-11-03 重做。入口是 `dist/index.html`，当前页面渲染使用 `dist/institute.js`，统一样式使用 `dist/institute.css`。`visual-atlas`、`nautical-map` 和 `collections` 文件负责各馆的专项互动。旧 `app.js` 与 `style.css` 已退出入口加载，保留作历史参考。产品约束见 `PRODUCT.md`，视觉规则见 `DESIGN.md`。新增研究桌图像与生成提示保存在 `dist/assets/`。
+产品约束见 `PRODUCT.md`，视觉规则见 `DESIGN.md`，V3 施工方案见 `FRONTEND-V3.md`。
 
-这是静态网站，无需安装项目依赖。装有 Python 时，在仓库目录运行：
+构建后在仓库目录运行：
 
 ```sh
-python -m http.server 8765 --bind 127.0.0.1 --directory dist
+npm run preview
 ```
 
-浏览器打开 `http://127.0.0.1:8765/`。`Ctrl+C` 停止预览。
+浏览器打开 `http://127.0.0.1:8765/`，`Ctrl+C` 停止。改代码时也可以用 `npm run dev` 打开带热更新的开发服务器（`http://127.0.0.1:5173/`）。网站地址格式与以前相同：`?page=<馆藏或展室>`、`?article=<文章ID>&from=<馆藏>`，旧文章 ID 由别名表兼容。
+
+`dist/` 是纯静态文件，没有 Node.js 时也可以用 Python 预览：`python -m http.server 8765 --bind 127.0.0.1 --directory dist`。
+
+## 测试
+
+```sh
+npm run build
+npm test
+```
+
+`npm test` 对 `dist/` 运行冒烟测试：七个馆藏、三间展室及其地址参数、文章与旧别名、未找到页、单页切换与返回、阅览室检索、货币换算、航海图与施法交互。`tests/visual/` 下是改造前后的截图与计算样式比对工具，用法见各文件开头的注释。
 
 ## 保存与同步
 

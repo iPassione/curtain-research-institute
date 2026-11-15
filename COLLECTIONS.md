@@ -21,6 +21,8 @@
 
 本站为 buildless 静态站，`dist/index.html` 按顺序加载原 `catalogue.js`、新增内容、页面渲染与两个栏目交互脚本。原 build-editorial.mjs 可继续生成基础馆藏。
 
+2026-11-15 起改为 Vite 构建：上述脚本的数据在构建期按同样顺序合并（`scripts/build-content.mjs`），栏目文字在 `content/collection-content.js`，交互在 `src/features/collections.ts`。操作见 `README.md`。
+
 
 ## 独立长文扩充（2026-11-02）
 
@@ -30,6 +32,6 @@
 - 诸界：星辰与命运、镜界的窥视与伪装、时间铁律、亡者沟通与告别。
 - 日常：街市买卖、家庭餐桌、第一次远行、学徒工作与练习。
 - 新增源稿在 `collection-longform.json`，每章补充段落在 `collection-expansions.json`。真实来源和逐篇 additions 创作延伸记录保存在源稿中，后台说明不会注入公众正文。
-- 执行 `node build-collections.mjs` 生成 `dist/collection-longform.js`。页面在基础馆藏和原四篇栏目文章之后、app.js 之前加载新文。修改源稿后应重新生成。
+- 执行 `node build-collections.mjs` 生成 `content/generated/collection-longform.js`（V3 前为 `dist/collection-longform.js`），再 `npm run build`。页面在基础馆藏和原四篇栏目文章之后、app.js 之前加载新文。修改源稿后应重新生成。
 - 没有修改 `dist/catalogue.js` 或原始 Obsidian 知识库；旧板块的文章、原文与归属保持原状。
 - 街市赊账、厨房分工、观测记录、候门接应等为生活与行业习惯的具体化，不作为新增统一法律、机构或强制制度。没有增设固定工资、票价、时间法术、复活规则或核心剧情。

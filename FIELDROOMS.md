@@ -6,11 +6,11 @@
 
 | 页面 | 地址参数 | 内容文件 |
 | --- | --- | --- |
-| 造物陈列室 | `?page=exhibits` | `dist/exhibit-data.js` |
-| 五大陆旅行案头 | `?page=travel` | `dist/travel-data.js` |
-| 城市切片 | `?page=street` | `dist/street-data.js` |
+| 造物陈列室 | `?page=exhibits` | `content/fieldrooms/exhibit-data.js` |
+| 五大陆旅行案头 | `?page=travel` | `content/fieldrooms/travel-data.js` |
+| 城市切片 | `?page=street` | `content/fieldrooms/street-data.js` |
 
-界面逻辑在 `dist/fieldrooms.js`，样式在 `dist/fieldrooms.css`。数据先于界面脚本加载。三个入口位于首页与阅览室，导航栏的“开放展室”进入陈列室，展室内可相互切换。
+（2026-11-15 V3 地基起的路径。）界面逻辑在 `src/features/fieldrooms.ts` 与 `src/features/specimens.ts`，样式在 `src/styles/fieldrooms.css`。数据在构建时转成 `dist/data/` 下的 JSON，进入展室时才加载。三个入口位于首页与阅览室，导航栏的“开放展室”进入陈列室，展室内可相互切换。
 
 展品、目的大陆、出行目的、交通方式、街上时段与地点的选择会写入地址参数，方便分享当前内容。旅行案头支持勾选行装、下载文本清单；更换行程后重新整理清单，不上传或收集访客信息。
 
@@ -24,7 +24,7 @@
 
 ## 接续编辑
 
-三个数据文件直接生效，无需运行 `build-humanized.cjs`。该生成器仍只处理原有文章。`connect-fieldrooms.cjs` 为接线与格式整理工具，日常改稿无需运行。
+三个数据文件改完后运行 `npm run build` 生效，无需运行 `build-humanized.cjs`。该生成器仍只处理原有文章。`connect-fieldrooms.cjs` 为接线与格式整理工具，日常改稿无需运行。
 
 ## 器物图重绘 · 2026-11-04
 
