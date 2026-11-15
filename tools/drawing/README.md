@@ -34,7 +34,7 @@ pwsh -File .\tools\drawing\restore-tools.ps1 -NpmPath 'D:\你的Node目录\npm.c
 - `dist/specimen-renderer.js`：原创三维造型，使用 Three.js；按需渲染，不持续播放动画。切换器物时释放几何体、材质、纹理和 WebGL 上下文。
 - `tools/drawing/build-plates.cjs`：Maker.js 正面图与 Rough.js 排线；图版是创作形制，未编造实际尺寸或法术内部工作机制。
 - `dist/assets/plates/*.svg`：生成图版，也是无 WebGL 时的后备图。
-- `dist/vendor/three`：已随网站提交的浏览器运行文件和 MIT 许可，浏览页面无需安装开发依赖，也不依赖公共 CDN。
+- `dist/vendor/three`：2026-11-15 已移除。器物图改回油画插图后，网站不再加载 Three.js；许可原文仍保留在许可目录。
 - `dist/vendor/licenses`：下载项目的上游许可原文。
 
 重建图版：
