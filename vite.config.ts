@@ -10,6 +10,8 @@ export default defineConfig({
     assetsDir: 'build',
     target: 'es2020',
     modulePreload: { polyfill: false },
+    // 首页三维场景（three.js）单独成块，压缩后约 140 KB，只在首页、支持 WebGL2 时按需载入。
+    chunkSizeWarningLimit: 600,
   },
   server: { port: 5173, host: '127.0.0.1' },
 });
