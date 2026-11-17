@@ -1,0 +1,41 @@
+/* V3 阶段 2：首页「穿过帷幕」。滚动轨道里固定一屏舞台：占位图 → 画布 → SVG 弧线 → 文案层。 */
+@layer v3 {
+.journey { position: relative; height: calc(var(--journey-screens, 2.6) * 100svh); background: var(--night); }
+.journey-stage.hero { position: sticky; top: 0; height: 100svh; min-height: 0; max-height: none; overflow: hidden; }
+
+/* 画布宿主铺满舞台；画布第一帧画完后淡入，占位图随之退场。 */
+.journey-gl { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.gl-canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s var(--ease-out, ease-out); }
+.gl-canvas.is-ready { opacity: 1; }
+.journey[data-gl=on] .hero-image { opacity: 0; transition: opacity 1.2s ease .2s; }
+.journey[data-gl=off] .journey-gl { display: none; }
+
+/* 画布之上压一层左侧暗角，保证标题可读（与原主视觉的渐层一致）。 */
+.journey[data-gl=on] .journey-stage::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, #07110fcc 0%, #07110f55 40%, #07110f00 70%), linear-gradient(0deg, #07110fb0, transparent 35%);
+}
+
+/* 第二幕说明文字：居中、大号衬线，压在穹顶之下。 */
+.journey-act { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4em; padding: 0 8%; pointer-events: none; z-index: 1; }
+.journey-line {
+  margin: 0; max-width: 24em; text-align: center; text-wrap: balance;
+  font: 400 clamp(22px, 2.5vw, 36px)/1.75 var(--display); letter-spacing: .04em; color: var(--moon, #f4eedc);
+  text-shadow: 0 2px 24px #07110fe6, 0 0 2px #07110f;
+  text-autospace: normal; opacity: 0;
+  /* 只在标点与空格处断行（「穹顶落 / 下」这类断法不出现）；实在放不下时才在字间断开。 */
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+.journey-line + .journey-line { font-size: clamp(16px, 1.5vw, 21px); color: #dfe3d6; }
+
+/* 底栏的分隔线兼作进度条。 */
+.journey .hero-bottom { position: absolute; }
+.journey-progress { position: absolute; left: 0; right: 0; top: -1px; height: 1px; overflow: hidden; }
+.journey-progress > span { display: block; height: 100%; background: var(--gold, #d4b36e); transform-origin: left; transform: scaleX(0); }
+
+.gl-debug { position: fixed; z-index: 99; left: 8px; bottom: 8px; padding: 4px 8px; background: #000c; color: #9f9; font: 11px/1.4 ui-monospace, monospace; pointer-events: none; }
+
+@media (max-width: 850px) {
+  .journey-line { font-size: clamp(20px, 5.6vw, 28px); }
+}
+}
