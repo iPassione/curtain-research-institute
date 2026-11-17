@@ -1,7 +1,7 @@
 // 路由总表：按旧站脚本的执行顺序重放一次页面构建——
 // institute.js（页面主体）→ visual-atlas.js → nautical-map.js → collections.js → fieldrooms.js。
 // 先在 prepare 阶段取齐数据与模块，再同步渲染，避免中间状态闪现。
-import { loadArticle, loadManifest, loadRoom } from '../data/store';
+import { loadArticle, loadGlossary, loadManifest, loadRoom } from '../data/store';
 import type { Prepare } from '../router';
 import { belongs } from './shared';
 
@@ -21,7 +21,9 @@ export const prepare: Prepare = async url => {
   const fieldroomsActive = !params.has('article');
   const room = fieldroomsActive ? ROOMS.find(r => r === page) : undefined;
 
-  const [article, home, articleRoute, collectionRoute, notFound, atlas, nautical, collections, fieldrooms, roomData] = await Promise.all([
+  const [glossary, article, home, articleRoute, collectionRoute, notFound, atlas, nautical, collections, fieldrooms, roomData] = await Promise.all([
+    // 术语表很小；取不到时文章照常显示，只是没有批注。
+    meta ? loadGlossary().catch(() => []) : null,
     meta ? loadArticle(meta.id) : null,
     isHome ? import('./home') : null,
     meta ? import('./article') : null,
@@ -38,7 +40,7 @@ export const prepare: Prepare = async url => {
     document.title = defaultTitle;
     document.body.dataset.surface = meta ? 'article' : section ? 'collection' : 'home';
     document.body.dataset.collection = page || collection || '';
-    if (meta && article && articleRoute) articleRoute.renderArticle(ctx, data, article, collection);
+    if (meta && article && articleRoute) articleRoute.renderArticle(ctx, data, article, collection, glossary || []);
     else if (section && collectionRoute) collectionRoute.renderCollection(ctx, data, section, page!);
     else if ((page || id) && notFound) notFound.renderNotFound(ctx);
     else if (home) home.renderHome(ctx, data);

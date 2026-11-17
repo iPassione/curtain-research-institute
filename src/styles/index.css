@@ -5,8 +5,8 @@
           若拆成每个文件一层，后一层会无视特异性整体覆盖前一层：例如 institute 的 p{line-height:1.9}
           会压过 visual-atlas 更具体的 .atlas-heading>p{line-height:2}，改变观感。
           按 tokens / base / shell / read / exhibits / veil 细分，需要先理清这些跨文件覆盖，留到改版式的阶段进行。
-   之后阶段新增的样式放在 site 之后的层里。 */
-@layer base, site;
+   v3     阶段 1 起新增的样式（read.css 等），晚于 site，覆盖旧规则时不依赖特异性。 */
+@layer base, site, v3;
 @import './base.css';
 @import './visual-atlas.css';
 @import './nautical-map.css';
@@ -14,3 +14,4 @@
 @import './institute.css';
 @import './fieldrooms.css';
 @import './veil.css';
+@import './read.css';

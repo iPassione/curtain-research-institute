@@ -42,6 +42,43 @@ function scrollToHash(hash: string) {
   else scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
 }
 
+// 页面切换转场（View Transitions）：馆藏条目的标题与文章大标题互相变形，其余内容短暂交叉淡化。
+// 只给一对元素命名：进入文章时取新文章的 id，离开文章时取旧文章的 id；两侧都找不到可见的对应元素时只做淡化。
+// 不支持该接口或用户要求减弱动态时直接切换。
+const TITLE = 'curtain-title';
+function sharedTitle(from: string, to: string) {
+  return new URLSearchParams(to).get('article') || new URLSearchParams(from).get('article') || '';
+}
+function nameVisible(id: string) {
+  if (!id) return null;
+  const el = [...document.querySelectorAll<HTMLElement>('[data-vt]')].find(e => {
+    if (e.dataset.vt !== id) return false;
+    const r = e.getBoundingClientRect();
+    return r.height > 0 && r.bottom > 0 && r.top < innerHeight;
+  });
+  if (el) el.style.viewTransitionName = TITLE;
+  return el || null;
+}
+function unname(el: HTMLElement | null) {
+  if (!el) return;
+  el.style.viewTransitionName = '';
+  if (!el.getAttribute('style')) el.removeAttribute('style');
+}
+function transition(commit: () => void, id: string) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } };
+  if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { commit(); return; }
+  const before = nameVisible(id);
+  let after: HTMLElement | null = null;
+  const vt = doc.startViewTransition(() => {
+    unname(before);
+    commit();
+    after = nameVisible(id);
+    // 只有一侧有标题时不做变形，避免标题从画面中央飞入飞出。
+    if (!before) unname(after);
+  });
+  vt.finished.finally(() => unname(after));
+}
+
 export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (url: URL) => void) {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   currentKey = history.state?.key || newKey();
@@ -66,24 +103,30 @@ export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (ur
       throw error;
     }
     if (id !== navId) return;
-    teardown?.();
-    const controller = new AbortController();
-    const cleanups: Array<() => void> = [];
-    teardown = () => { controller.abort(); cleanups.splice(0).reverse().forEach(fn => { try { fn(); } catch (e) { console.error(e); } }); };
-    renderedSearch = url.search;
-    render({
-      url, params: new URLSearchParams(url.search), main, signal: controller.signal,
-      onCleanup: fn => cleanups.push(fn),
-      replaceParams: next => { history.replaceState(history.state, '', next); renderedSearch = next.search; },
-    });
-    if (mode === 'pop') {
-      const y = positions()[currentKey];
-      if (y != null) scrollTo({ top: y, behavior: 'instant' as ScrollBehavior });
-      else scrollToHash(url.hash);
-    } else if (mode !== 'initial' || url.hash) {
-      scrollToHash(url.hash);
-    }
+    const commit = () => {
+      teardown?.();
+      const controller = new AbortController();
+      const cleanups: Array<() => void> = [];
+      teardown = () => { controller.abort(); cleanups.splice(0).reverse().forEach(fn => { try { fn(); } catch (e) { console.error(e); } }); };
+      renderedSearch = url.search;
+      render({
+        url, params: new URLSearchParams(url.search), main, signal: controller.signal,
+        onCleanup: fn => cleanups.push(fn),
+        replaceParams: next => { history.replaceState(history.state, '', next); renderedSearch = next.search; },
+      });
+      if (mode === 'pop') {
+        const y = positions()[currentKey];
+        if (y != null) scrollTo({ top: y, behavior: 'instant' as ScrollBehavior });
+        else scrollToHash(url.hash);
+      } else if (mode !== 'initial' || url.hash) {
+        scrollToHash(url.hash);
+      }
+    };
+    if (mode === 'initial') commit();
+    else transition(commit, sharedTitle(previousSearch, url.search));
+    previousSearch = url.search;
   }
+  let previousSearch = location.search;
 
   document.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
