@@ -30,6 +30,17 @@ for (const [label, w, h, tier] of [['桌面', 1440, 900, 'full'], ['手机', 390
   await page.getByRole('button', { name: '复位朝北' }).click();
   await page.mouse.move(5, 5);
   await shot('5-复位');
+  if (w > 800) {
+    const setHour = h => page.evaluate(h => { const i = document.querySelector('#chart-hour'); i.value = String(h); i.dispatchEvent(new Event('input', { bubbles: true })); }, h);
+    await setHour(17.4); await shot('6-黄昏');
+    await setHour(22.5); await shot('7-夜晚');
+    await setHour(15);
+    await page.getByRole('button', { name: '放大' }).click(); await page.getByRole('button', { name: '放大' }).click(); await shot('8-放大');
+    await page.getByRole('button', { name: '复位朝北' }).click(); await page.waitForTimeout(1500);
+    await page.locator('.route-go').click();
+    await page.waitForTimeout(900); await frame.screenshot({ path: path.join(out, `${label}-9a-界门途中.png`) });
+    await page.waitForTimeout(1300); await frame.screenshot({ path: path.join(out, `${label}-9b-界门抵达.png`) });
+  }
   await page.close();
 }
 await browser.close();

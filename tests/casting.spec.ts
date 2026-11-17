@@ -79,3 +79,21 @@ test('减弱动态时保留原图解，不载入施法台代码', async ({ brows
   expect(scripts.filter(u => /casting-room-/.test(u))).toEqual([]);
   await context.close();
 });
+
+test('导出后不倒放：效果演完即回到「按住施法」，可以直接开始下一次', async ({ page }) => {
+  await openTable(page);
+  await page.locator('[data-element="1"]').click();
+  const hold = page.locator('.casting-hold');
+  await hold.focus();
+  await page.keyboard.down('Space');
+  await expect(page.locator('.casting-status')).toHaveText('结构已稳定，松手导出。', { timeout: 15000 });
+  await page.keyboard.up('Space');
+  await expect(page.locator('.casting-status')).toHaveText('冰霜已导出。');
+  // 冰霜效果约 3.3 秒，演完后状态清空、按钮复原
+  await expect(page.locator('.casting-status')).toHaveText('', { timeout: 8000 });
+  await expect(hold).toHaveText('按住施法');
+  await page.keyboard.down('Space');
+  await expect(pressed(page)).toHaveAttribute('data-step', '0');
+  await expect(hold).toHaveText('继续按住…');
+  await page.keyboard.up('Space');
+});

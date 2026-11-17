@@ -28,18 +28,18 @@ for (const [label, w, h, tier] of [['桌面', 1440, 900, 'full'], ['手机', 390
     for (const [at, name] of shots) { await page.waitForTimeout(at - t); t = at; await shot(name); }
     await page.waitForTimeout(Math.max(0, ms - t));
   };
-  await hold(0, 5600, [[900, '1-起势'], [2200, '2-塑形·火焰'], [5400, '3-稳定·火焰']]);
-  await page.mouse.move(box.x + box.width * 0.92, box.y + box.height * 0.18, { steps: 4 });
-  await page.mouse.up();
-  await page.waitForTimeout(260); await shot('4a-导出');
-  await page.waitForTimeout(700); await shot('4b-撞上弧线');
-  await page.waitForTimeout(2400);
-  await hold(1, 5600, [[5400, '5-稳定·冰霜']]);
-  await page.mouse.up(); await page.waitForTimeout(3000);
-  await hold(2, 5600, [[5400, '6-稳定·防御']]);
-  await page.mouse.up(); await page.waitForTimeout(3000);
-  await hold(0, 1500, []);
-  await page.mouse.up(); await page.waitForTimeout(250); await shot('7-提前松手');
+  const release = async (element, name, times) => {
+    await hold(element, 5600, []);
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.25, { steps: 3 });
+    await page.mouse.up();
+    let t = 0;
+    for (const [at, n] of times) { await page.waitForTimeout(at - t); t = at; await shot(`${name}-${n}`); }
+    await page.waitForTimeout(Math.max(0, 3600 - t));
+  };
+  await hold(0, 900, [[900, '1-起势']]); await page.mouse.up(); await page.waitForTimeout(2000);
+  await release(0, '火焰', [[150, 'a飞出'], [450, 'b爆燃'], [900, 'c余烬'], [3300, 'd重新铺开']]);
+  await release(1, '冰霜', [[350, 'a迸开'], [900, 'b冻住画面'], [2000, 'c碎裂']]);
+  await release(2, '防御', [[450, 'a放大'], [850, 'b高光滚过'], [1250, 'c高光到顶']]);
   await page.close();
 }
 await browser.close();

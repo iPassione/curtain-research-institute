@@ -92,3 +92,26 @@ test('离开地理馆后按钮放回原处，画布移出页面', async ({ page 
   await expect(page.locator('.nautical-stage')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   await expect(page.locator('.chart-overlay [data-chart-place]')).toHaveCount(5);
 });
+
+test('昼夜、缩放与界门往来：只在立体模式出现，抵达后带着行程去旅行案头', async ({ page }) => {
+  await openChart(page);
+  await expect(page.locator('.chart-extra')).toBeVisible();
+  const hour = page.locator('#chart-hour');
+  await hour.fill('6.5');
+  await expect(page.locator('.chart-hour-label output')).toHaveText('06:30');
+  await page.getByRole('button', { name: '日升日落' }).click();
+  await expect(page.getByRole('button', { name: '停在此刻' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '停在此刻' }).click();
+  await page.getByRole('button', { name: '放大' }).click();
+  await page.getByRole('button', { name: '缩小' }).click();
+  await page.locator('#route-from').selectOption('3');
+  await page.locator('#route-to').selectOption('2');
+  await page.getByRole('button', { name: '走一趟界门' }).click();
+  await expect(page.locator('.route-status')).toHaveText('经界门从埃斯佩兰萨前往茨威尔格诺（示意）。');
+  const link = page.locator('.route-travel');
+  await expect(link).toBeVisible({ timeout: 6000 });
+  await expect(link).toHaveAttribute('href', '?page=travel&from=esperanza&to=tsvergno&mode=gate');
+  await page.locator('#route-to').selectOption('3');
+  await page.getByRole('button', { name: '走一趟界门' }).click();
+  await expect(page.locator('.route-status')).toContainText('同一块大陆');
+});
