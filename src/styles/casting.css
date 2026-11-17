@@ -1,0 +1,53 @@
+/* V3 阶段 4：魔法研究室「施法台」。画布铺在原图解的位置；就绪后原 SVG 隐藏，操作栏叠在台面底部。 */
+@layer v3 {
+.casting-gl { position: absolute; inset: 0; z-index: 0; }
+.casting-gl .gl-canvas { display: block; width: 100%; height: 100%; }
+.casting-stage[data-gl=on] > svg { visibility: hidden; }
+.casting-stage[data-gl=on] { cursor: crosshair; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.casting-stage:not([data-gl=on]) .casting-ui { display: none; }
+.casting-stage[data-gl=on] .atlas-caption { z-index: 3; top: 12px; bottom: auto; right: auto; }
+
+.casting-ui { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+/* 稳定阶段的说明：默认很淡，随稳定度逐字点亮 */
+.casting-spell {
+  position: absolute; left: 6%; right: 6%; top: 7%; margin: 0; text-align: center; text-wrap: balance;
+  font: 400 clamp(14px, 1.45vw, 19px)/1.9 var(--display); letter-spacing: .08em; color: #e3d5a1;
+}
+.casting-spell span { opacity: .13; transition: opacity .3s, text-shadow .3s; }
+.casting-spell span.on { opacity: 1; text-shadow: 0 0 12px #e3d5a199; }
+
+.casting-nodes span { position: absolute; transform: translateX(-50%); font: 15px/1 var(--display); color: #abbcaa; letter-spacing: .1em; }
+
+/* 操作栏 */
+.casting-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 14px 18px 16px; background: linear-gradient(0deg, #0b2122f2, #0b212200); pointer-events: auto;
+}
+.casting-elements { display: flex; border: 1px solid #c6bd8d66; }
+.casting-elements button {
+  cursor: pointer; background: transparent; border: 0; border-right: 1px solid #c6bd8d40; color: #cdd6c6;
+  font: 13px/1 var(--display); letter-spacing: .1em; padding: 11px 16px; transition: background .2s, color .2s;
+}
+.casting-elements button:last-child { border-right: 0; }
+.casting-elements button[aria-pressed=true] { background: #e3d5a1; color: #173d32; }
+.casting-elements button:not([aria-pressed=true]):hover { background: #e3d5a11f; color: #f1e8c7; }
+.casting-hold {
+  cursor: pointer; border: 0; background: #e7d5a7; color: #173d32; font: 500 13px/1 var(--ui); letter-spacing: .08em;
+  padding: 13px 22px; min-width: 132px; touch-action: none; user-select: none; -webkit-user-select: none; transition: background .2s, box-shadow .3s;
+}
+.casting-hold:hover { background: #f6e9c7; }
+.casting-hold.is-ready { background: #fff2c2; box-shadow: 0 0 0 3px #fff2c255, 0 0 22px #fff2c288; }
+.casting-help { flex: 1 1 240px; margin: 0; font: 11px/1.7 var(--ui); color: #b5c4b7; }
+.casting-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.casting-elements button:focus-visible, .casting-hold:focus-visible { outline: 2px solid #e3d5a1; outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  .casting-stage[data-gl=on] { aspect-ratio: 4 / 5; }
+  .casting-nodes span { font-size: 12px; }
+  .casting-bar { padding: 12px; gap: 8px; }
+  .casting-elements button { padding: 11px 12px; }
+  .casting-hold { flex: 1; }
+  .casting-help { flex-basis: 100%; }
+}
+}

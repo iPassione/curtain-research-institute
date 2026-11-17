@@ -2,6 +2,7 @@
 import { gsap } from 'gsap';
 import type { Manifest } from '../data/types';
 import type { RouteContext } from '../router';
+import { glCapable } from '../gl/tier';
 
 export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
   if (!['geography', 'magic', 'people'].includes(page)) return;
@@ -33,6 +34,8 @@ export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
     replay.addEventListener('click', () => { if (timer) clearInterval(timer); let i = 0; render(i); replay.textContent = '重新演示 ↻'; timer = window.setInterval(() => { if (++i === 4) { clearInterval(timer!); timer = null; replay.textContent = '演示一次 ↻'; return; } render(i); }, 1600); }, { signal }); render(0);
     document.addEventListener('visibilitychange', () => { if (document.hidden) { if (timer) clearInterval(timer); timer = null; replay.textContent = '演示一次 ↻'; } }, { signal });
     ctx.onCleanup(() => { if (timer) clearInterval(timer); gsap.killTweensOf(panel.querySelector('.cast-particle')); });
+    // 施法台：支持 WebGL2 与浮点纹理计算、未要求减弱动态时，在图解上叠加可亲手施法的粒子装置（按需载入）。
+    if (glCapable()) import('../gl/casting-room').then(m => { if (!signal.aborted) m.mountCastingRoom(ctx, panel); });
   }
   if (page === 'people') {
     const people: [string, string, string, number, number][] = [['庭代尔', '导师与领导者', 'tyndale-early', 50, 46], ['厄尼西姆', '首席 · 赛特斯族', 'ernicium-profile', 20, 20], ['加利贝尔', '次席 · 翼人族', 'galibel-profile', 50, 14], ['普里多尼', '第三席 · 质人族', 'pridony-profile', 80, 20], ['赫法恩斯', '第四席 · 半羊人族', 'huffines-profile', 20, 78], ['塞浦路斯', '第五席 · 星中人混血', 'cyprus-profile', 50, 85], ['切西娅', '第六席 · 月人族', 'chessia-profile', 80, 78]];
