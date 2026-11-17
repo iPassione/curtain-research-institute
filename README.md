@@ -64,6 +64,12 @@ npm run build
 - 诸界观测、巫师日常两个栏目与四篇正文：`content/collection-content.js`。
 - 两个栏目里交互面板的文字（六大世界、生活专题、货币换算）写在 `src/features/collections.ts`；方位图、施法阶段与人物关系写在 `src/features/atlas.ts`。
 
+### 术语批注与全站检索
+
+- 术语批注表在 `content/glossary.json`：每条只写「词 → 文章 ID」，可用 `match` 补充别的写法。悬停卡片显示所指文章自己的类别与提要，不另写释义。每篇文章里每个术语只在首次出现处标注，不会指向本篇。
+- 全站检索（页头「检索」、`Ctrl/⌘ K` 或 `/`）的索引 `data/search.json` 由构建自动生成，覆盖馆藏、文章、各章节与三间展室，无需手工维护。
+- 改了术语表或任何正文后运行 `npm run build:content`（`npm run build` 已包含）。在其他文章正文里一次都没出现的词条会被略去并打印提示。
+
 ### 迁移断言
 
 `tests/baseline/content-baseline.json` 记录了 V3 迁移前 53 篇文章的标题、章节数、段落数与全文指纹。`npm run verify:content` 检查当前构建与它逐篇一致，用来确认迁移没有改动内容。它只服务于这次迁移验收：之后有意修改正文，被改的文章会在这里报出差异，属于预期结果，日常改稿不必运行。
