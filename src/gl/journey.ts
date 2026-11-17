@@ -38,7 +38,7 @@ export function mountJourney(ctx: RouteContext) {
     const tl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
-        trigger: root, start: 'top top', end: 'bottom bottom', scrub: true,
+        trigger: root, start: 'top top', end: 'bottom bottom', scrub: 0.5, // 文字与镜头一样带一点滑行
         onUpdate: self => scene?.setProgress(self.progress * JOURNEY_END),
       },
     });

@@ -55,6 +55,25 @@ mask = blur(mask, 7).map(v => (v > 0.25 ? 1 : 0));
 mask = blur(mask, 7).map(v => (v > 0.6 ? 1 : 0));
 // 去掉面积很小的岛屿碎点：再模糊一次，弱信号压掉
 mask = blur(mask, 10).map(v => (v > 0.35 ? 1 : 0));
+// 补洞：只有与外海连通的区域才算海（从图内圆周向里泛洪），被陆地围住的空洞补成陆地。
+// 通向外海的海湾不受影响。
+{
+  const sea = new Uint8Array(N * N), stack = [];
+  for (let a = 0; a < 3600; a++) {
+    const x = Math.round(N / 2 + Math.cos(a / 3600 * Math.PI * 2) * N * 0.43), y = Math.round(N / 2 + Math.sin(a / 3600 * Math.PI * 2) * N * 0.43);
+    const i = y * N + x;
+    if (!mask[i] && !sea[i]) { sea[i] = 1; stack.push(i); }
+  }
+  while (stack.length) {
+    const i = stack.pop(), x = i % N, y = (i - x) / N;
+    for (const j of [i - 1, i + 1, i - N, i + N]) {
+      const jx = j % N, jy = (j - jx) / N;
+      if (j < 0 || j >= N * N || Math.abs(jx - x) > 1 || sea[j] || mask[j] || !inside(jx, jy)) continue;
+      sea[j] = 1; stack.push(j);
+    }
+  }
+  for (let i = 0; i < N * N; i++) { const x = i % N, y = (i - x) / N; if (!mask[i] && !sea[i] && inside(x, y) && !rose(x, y)) mask[i] = 1; }
+}
 
 // 3. 海岸坡度 × 山地细节
 const slope = blur(mask, 16);

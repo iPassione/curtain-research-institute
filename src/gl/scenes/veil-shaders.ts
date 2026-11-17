@@ -252,25 +252,45 @@ void main(){
 }`,
 };
 
-// 穹顶之下的五大陆航海图：铺在海面上，圆形遮罩，夜色中压暗，中心一盏暖光，墨线泛金。
-// 只在镜头进入穹顶后显现（uInside），从外面看不到。
-export const chartVertex = /* glsl */ `
+// 穹顶之下的五大陆：用地理馆浮雕的同一张高度图，让陆地从真实的海面上隆起成地形，
+// 颜色取航海图上陆地部分（海的部分丢弃，露出下面真实的海）。只在镜头进入穹顶后显现（uInside）。
+export const landVertex = /* glsl */ `
+uniform sampler2D uHeight;
+uniform float uAmp;
 varying vec2 vUv;
-void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-export const chartFragment = /* glsl */ `
-uniform sampler2D uMap;
-uniform float uInside, uReady;
-uniform vec3 uGold, uNight;
-varying vec2 vUv;
+varying vec3 vWorld;
 void main(){
-  vec2 c = vUv - 0.5;
-  float r = length(c) * 2.0;
-  float mask = 1.0 - smoothstep(0.9, 0.985, r);
+  vUv = uv;
+  vec3 p = position;
+  p.y += texture2D(uHeight, uv).r * uAmp;
+  vec4 w = modelMatrix * vec4(p, 1.0);
+  vWorld = w.xyz;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+export const landFragment = /* glsl */ `
+uniform sampler2D uMap, uHeight;
+uniform vec2 uTexel;
+uniform float uAmp, uSize, uInside, uReady;
+uniform vec3 uMoonDir, uMoon, uGold, uHorizon;
+varying vec2 vUv;
+varying vec3 vWorld;
+void main(){
+  float h = texture2D(uHeight, vUv).r;
+  float land = smoothstep(0.05, 0.16, h);
+  if (land < 0.01 || uInside < 0.001) discard;
+  float hx = texture2D(uHeight, vUv + vec2(uTexel.x, 0.0)).r - texture2D(uHeight, vUv - vec2(uTexel.x, 0.0)).r;
+  float hz = texture2D(uHeight, vUv + vec2(0.0, uTexel.y)).r - texture2D(uHeight, vUv - vec2(0.0, uTexel.y)).r;
+  float k = uAmp / (2.0 * uSize);
+  vec3 N = normalize(vec3(-hx * k / uTexel.x, 1.0, hz * k / uTexel.y));
   vec3 tex = texture2D(uMap, vUv).rgb;
-  float lamp = 1.0 - smoothstep(0.0, 1.05, r);
-  vec3 col = tex * (0.2 + 0.46 * lamp);
-  float ink = 1.0 - smoothstep(0.08, 0.32, dot(tex, vec3(0.3333)));
-  col += uGold * ink * 0.22 * lamp;
-  col = mix(uNight, col, smoothstep(1.0, 0.75, r));
-  gl_FragColor = vec4(col, mask * uInside * uReady);
+  // 月光从侧面照出山脊；头顶织就的穹顶洒下一层很淡的金光
+  vec3 L = normalize(vec3(uMoonDir.x, 0.85, uMoonDir.z));
+  float lit = max(dot(N, L), 0.0);
+  vec3 col = tex * (0.2 + 0.62 * lit) * vec3(0.8, 0.88, 1.0) + tex * uGold * 0.1;
+  // 海岸：浅浅一圈月白的浪花
+  float shore = smoothstep(0.05, 0.1, h) * (1.0 - smoothstep(0.1, 0.17, h));
+  col += uMoon * shore * 0.18;
+  // 远处融进夜色
+  col = mix(col, uHorizon * 0.8, smoothstep(90.0, 220.0, distance(cameraPosition, vWorld)) * 0.7);
+  gl_FragColor = vec4(col, land * uInside * uReady);
 }`;

@@ -18,7 +18,7 @@ import type { WebGLRenderer } from 'three';
 import type { GLScene } from '../stage';
 import type { Tier } from '../tier';
 import {
-  chartFragment, chartVertex, finishShader, lampFragment, membraneFragment, membraneVertex, seaFragment, seaVertex, skyFragment, skyVertex, starFragment, starVertex,
+  finishShader, lampFragment, landFragment, landVertex, membraneFragment, membraneVertex, seaFragment, seaVertex, skyFragment, skyVertex, starFragment, starVertex,
 } from './veil-shaders';
 
 const R = 60; // 穹顶半径（场景单位）
@@ -35,8 +35,10 @@ export interface VeilScene extends GLScene { setProgress(p: number, immediate?: 
 /** 第四幕在航海图上标注的地名：u、v 为图上的百分比位置（与地理馆航海图一致）。 */
 export interface ChartPlace { el: HTMLElement; u: number; v: number }
 
-const CHART = 52; // 航海图边长（场景单位），铺在穹顶中央
-const CHART_Y = 1.7; // 略高于浪尖
+const INNER = 1.3; // 进入后穹顶扩大到外面看到的 1.3 倍：「内部面积略大于从外部估算的规模」
+const LAND = 2 * R * INNER * 0.9; // 陆地图边长：铺到帷幕边缘
+const LAND_AMP = 3.4; // 陆地最高处
+const LAND_Y = -0.6; // 陆地基准略低于海面，海岸自然没入浪里
 
 export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places: ChartPlace[] = []): VeilScene {
   let tier = startTier;
@@ -143,23 +145,32 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   membrane.renderOrder = 3;
   scene.add(membraneFar, membrane);
 
-  // 五大陆航海图（复用地理馆的航海图）。贴图载入前不显示。
-  const chartUniforms = { uMap: { value: null as Texture | null }, uInside: shared.uInside, uReady: { value: 0 }, uGold: shared.uGold, uNight: { value: lin('#03100e') } };
-  const chartGeometry = new PlaneGeometry(CHART, CHART);
-  chartGeometry.rotateX(-Math.PI / 2);
-  const chart = new Mesh(chartGeometry, new ShaderMaterial({ uniforms: chartUniforms, vertexShader: chartVertex, fragmentShader: chartFragment, transparent: true, depthWrite: false }));
-  chart.position.y = CHART_Y;
+  // 穹顶之下的五大陆：地理馆浮雕同一张高度图隆起成地形，颜色取航海图上陆地的部分；两张图都载入后才显示。
+  const landUniforms = {
+    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 512, 1 / 512) },
+    uAmp: { value: LAND_AMP }, uSize: { value: LAND }, uInside: shared.uInside, uReady: { value: 0 },
+    uMoonDir: shared.uMoonDir, uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
+  };
+  const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 300 : 160, tier === 'full' ? 300 : 160);
+  landGeometry.rotateX(-Math.PI / 2);
+  const chart = new Mesh(landGeometry, new ShaderMaterial({ uniforms: landUniforms, vertexShader: landVertex, fragmentShader: landFragment, transparent: true }));
+  chart.position.y = LAND_Y;
   chart.renderOrder = 1;
   scene.add(chart);
-  let disposed = false;
-  new TextureLoader().load('assets/nautical-chart-1254.webp', tex => {
+  let disposed = false, loaded = 0;
+  const loader = new TextureLoader();
+  const done = () => { if (++loaded === 2) landUniforms.uReady.value = 1; };
+  loader.load('assets/nautical-chart-1254.webp', tex => {
     if (disposed) { tex.dispose(); return; }
     tex.colorSpace = SRGBColorSpace;
     tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-    chartUniforms.uMap.value = tex;
-    chartUniforms.uReady.value = 1;
+    landUniforms.uMap.value = tex; done();
   });
-  const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * CHART, CHART_Y, (pl.v / 100 - 0.5) * CHART));
+  loader.load('assets/data/nautical-height.png', tex => {
+    if (disposed) { tex.dispose(); return; }
+    landUniforms.uHeight.value = tex; done();
+  });
+  const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * LAND, LAND_Y + LAND_AMP * 0.8, (pl.v / 100 - 0.5) * LAND));
   const projected = new Vector3();
 
   // 渲染管线：完整档先把「不含薄膜的场景」画进半分辨率离屏目标供折射采样，再整体渲染并加泛光。
@@ -188,11 +199,12 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   let rippleIndex = 0, lastRipple = 0, lastPoint: Vector3 | null = null;
   const canvas = renderer.domElement;
   const onPointer = (e: PointerEvent) => {
-    if (shared.uReveal.value < 0.35 || e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch') return;
     const rect = canvas.getBoundingClientRect();
     if (!rect.width) return;
     ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
-    pointer.set(ndc.x, ndc.y);
+    pointer.set(Math.max(-1, Math.min(1, ndc.x)), Math.max(-1, Math.min(1, ndc.y))); // 视线跟随：全程都记录
+    if (shared.uReveal.value < 0.35) return; // 涟漪只在薄膜显形后出现
     const now = shared.uTime.value;
     if (now - lastRipple < 0.14) return;
     raycaster.setFromCamera(ndc, camera);
@@ -212,6 +224,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   // 相机路径
   let width = 1, height = 1, target = 0, shown = 0, first = true;
   const camPos = new Vector3(), look = new Vector3(), lookIn = new Vector3(), lookDown = new Vector3();
+  const pointerS = new Vector2(); // 平滑后的指针
   const deg = Math.PI / 180;
   let placesAlpha = 0;
   const place = (p: number, time: number) => {
@@ -219,50 +232,50 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     const portrait = aspect < 1;
     const back = aspect < 1.25 ? Math.min(1.35, 1.25 / aspect) : 1; // 竖屏时后退，让穹顶放得下
     const fov0 = portrait ? 70 : 46;
-    const a1 = easeInOut(smooth(0, 0.2, p)), a2 = easeInOut(smooth(0.2, 0.45, p));
-    const a3 = easeInOut(smooth(0.45, 0.7, p)), a4 = easeInOut(smooth(0.7, 0.93, p));
-    const z2 = (158 - 8 * a1 - 16 * a2) * back; // 第二幕结束时的距离
-    const y2 = 3.4 + 1.2 * a2;
-    // 三幕分三段：快速推近到薄膜前（.45–.56）→ 贴着薄膜慢慢穿过（.56–.65）→ 进入穹顶内 z=24（.65–.70）。
-    // 穿膜那段占约 9% 的滚动距离，让织纹放大、涟漪荡开的过程看得清楚。
-    const k1 = easeInOut(smooth(0.45, 0.56, p)), k2 = smooth(0.56, 0.65, p), k3 = easeInOut(smooth(0.65, 0.7, p));
-    const z3 = z2 + (70 - z2) * k1 + (52 - 70) * k2 + (24 - 52) * k3;
-    const y3 = y2 + (7.5 - y2) * k1;
-    const top = portrait ? new Vector3(0, 53, 16) : new Vector3(0, 51, 22);
+    const a1 = easeInOut(smooth(0, 0.2, p)), a2 = easeInOut(smooth(0.2, 0.45, p)), a4 = easeInOut(smooth(0.7, 0.93, p));
+    // 一幕：一开始滚动，镜头就明显向前推、缓缓降到贴近海面；二幕继续推近，整座穹顶落进画面。
+    const z2 = (190 - 36 * a1 - 20 * a2) * back;
+    const y2 = 11 - 7.6 * a1 + 1.2 * a2;
+    // 三幕：推近到薄膜前（.45–.56）→ 贴着薄膜慢慢穿过（.56–.65，约 9% 滚动）→ 进入穹顶（.65–.72）
+    const k1 = easeInOut(smooth(0.45, 0.56, p)), k2 = smooth(0.56, 0.65, p), k3 = easeInOut(smooth(0.65, 0.72, p));
+    const z3 = z2 + (70 - z2) * k1 + (50 - 70) * k2 + (26 - 50) * k3;
+    const y3 = y2 + (7.5 - y2) * k1 + 7 * k3; // 进入后抬高一些，从陆地上方掠过
+    // 四幕：升到扩大后的穹顶内高处俯瞰（离球心不超过扩大后的半径）
+    // 几乎从正上方俯看，视线落在陆地中心，五块大陆都在画面里
+    const top = portrait ? new Vector3(0, 72, 12) : new Vector3(0, 66, 26);
     const sway = Math.sin(time * 0.21) * 0.35 * (1 - a4);
-    camPos.set(
-      sway + pointer.x * (tier === 'full' ? 1.2 : 0) * (1 - a3),
-      y3 + (top.y - y3) * a4 + Math.sin(time * 0.33) * 0.12 + pointer.y * 0.4 * (1 - a3),
-      z3 + (top.z - z3) * a4,
-    );
-    // 视线：二幕看向穹顶上部 → 三幕平视穹顶深处 → 四幕俯视航海图中心
+    camPos.set(sway, y3 + (top.y - y3) * a4 + Math.sin(time * 0.33) * 0.12 * (1 - a4), z3 + (top.z - z3) * a4);
     look.set(0, 15 + 3 * a2, 0);
-    lookIn.set(0, 8, -80);
-    lookDown.set(0, 0, portrait ? 0 : -4);
+    lookIn.set(0, 8, -90);
+    lookDown.set(0, 0, portrait ? 2 : 3);
     look.lerp(lookIn, k1).lerp(lookDown, a4);
 
-    // 滑动变焦：穿过薄膜之前保持穹顶在画面中的大小（视角随距离收窄、背景被拉长）；
-    // 穿过之后视角迅速撑开，表现内部比外面看上去更大；俯瞰时略收。
-    const dist = camPos.length();
-    const startDist = Math.hypot(z2, y2);
-    const dolly = 2 * Math.atan(Math.tan((fov0 * deg) / 2) * Math.min(1, dist / startDist)) / deg;
-    const crossT = smooth(R + 3, R - 9, dist) * a3; // 0：尚在薄膜外；1：已在内部
-    const wide = portrait ? 82 : 70;
-    let fov = dolly + (wide - dolly) * easeInOut(crossT);
-    fov += ((portrait ? 64 : 54) - fov) * a4;
+    // 视角：推近时只轻微收窄；穿过之后在一段滚动距离里慢慢撑开（不再一下闪进去）；俯瞰时略收
+    const wide = portrait ? 82 : 66;
+    let fov = fov0 - 6 * k1;
+    fov += (wide - fov) * easeInOut(smooth(0.6, 0.72, p));
+    fov += ((portrait ? 96 : 60) - fov) * a4;
     camera.fov = fov;
     camera.aspect = aspect;
     camera.position.copy(camPos);
     camera.lookAt(look);
+    // 视线跟随指针：轻微偏转，俯瞰时减半
+    const follow = 1 - 0.5 * a4;
+    camera.rotateY(-pointerS.x * 0.05 * follow);
+    camera.rotateX(pointerS.y * 0.03 * follow);
     camera.updateProjectionMatrix();
 
+    const dist = camPos.length();
     shared.uReveal.value = smooth(0.22, 0.42, p);
-    shared.uInside.value = smooth(R + 1, R - 6, dist);
-    // 贴近薄膜时折射加剧，穿过的一瞬全屏荡开
-    const near = Math.exp(-Math.pow((dist - R) / 7, 2));
-    membraneUniforms.uNear.value = Math.exp(-Math.pow((dist - R) / 16, 2)) * a3;
+    // 进入之后，穹顶悄悄扩大到 1.3 倍；是否在内部按扩大后的半径判断
+    const grow = 1 + (INNER - 1) * easeInOut(smooth(0.62, 0.76, p));
+    shared.uInside.value = smooth(R * grow + 1, R * grow - 6, dist);
+    membrane.scale.setScalar(grow);
+    membraneFar.scale.setScalar(grow);
+    const near = Math.exp(-Math.pow((dist - R) / 7, 2)) * (1 - smooth(0.62, 0.66, p));
+    membraneUniforms.uNear.value = Math.exp(-Math.pow((dist - R) / 16, 2)) * smooth(0.45, 0.5, p) * (1 - smooth(0.66, 0.72, p));
     membraneUniforms.uRefract.value = tier === 'full' ? shared.uReveal.value * (1 + 5 * near) * (1 - shared.uInside.value) : 0;
-    finish.uniforms.uCross.value = near * smooth(0.45, 0.55, p) * (1 - smooth(0.72, 0.8, p));
+    finish.uniforms.uCross.value = near * smooth(0.45, 0.55, p) * 0.8;
     placesAlpha = smooth(0.8, 0.88, p) * (1 - smooth(0.95, 0.99, p));
   };
 
@@ -293,7 +306,9 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     },
     frame(dt, time) {
       renderer.setClearColor(0x07110f, 1); // 渲染器与其他场景共用，每帧设回自己的底色
-      shown = first ? target : shown + (target - shown) * (1 - Math.exp(-dt * 7));
+      // 镜头跟随滚动更柔和：滚轮一格一格的跳动被抹平成滑行
+      shown = first ? target : shown + (target - shown) * (1 - Math.exp(-dt * 3.4));
+      pointerS.lerp(pointer, 1 - Math.exp(-dt * 2.5));
       first = false;
       shared.uTime.value = time;
       finish.uniforms.uTime.value = time;
@@ -316,7 +331,8 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     dispose() {
       disposed = true;
       removeEventListener('pointermove', onPointer);
-      chartUniforms.uMap.value?.dispose();
+      landUniforms.uMap.value?.dispose();
+      landUniforms.uHeight.value?.dispose();
       composer.dispose();
       sceneTarget?.dispose();
       scene.traverse(o => {
