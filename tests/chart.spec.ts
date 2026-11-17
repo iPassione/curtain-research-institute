@@ -62,7 +62,7 @@ test('键盘：飞近后跑出画面的大陆仍能聚焦，聚焦时显示在�
   const sw = page.locator('[data-chart-place="3"]');
   await sw.focus();
   await expect(sw).toBeFocused();
-  expect(await sw.evaluate(el => getComputedStyle(el).opacity)).toBe('1');
+  await expect.poll(() => sw.evaluate(el => getComputedStyle(el).opacity)).toBe('1'); // 有 0.25 秒的淡入过渡
   await page.keyboard.press('Enter');
   await expect(page.locator('#continent-detail h3')).toHaveText('埃斯佩兰萨');
 });
