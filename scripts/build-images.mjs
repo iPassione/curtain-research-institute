@@ -25,7 +25,8 @@ let made = 0, skipped = 0;
 for (const file of files) {
   const rel = path.relative(src, file).split(path.sep).join('/');
   const ext = path.extname(rel).toLowerCase();
-  if (ext === '.svg') {
+  // data/ 下是供着色器读取的数据图（如航海图高度图），原样复制，不做有损压缩。
+  if (ext === '.svg' || rel.startsWith('data/')) {
     const target = path.join(out, rel);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(file, target);
