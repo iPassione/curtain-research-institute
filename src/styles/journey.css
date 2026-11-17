@@ -1,6 +1,6 @@
 /* V3 阶段 2：首页「穿过帷幕」。滚动轨道里固定一屏舞台：占位图 → 画布 → SVG 弧线 → 文案层。 */
 @layer v3 {
-.journey { position: relative; height: calc(var(--journey-screens, 2.6) * 100svh); background: var(--night); }
+.journey { position: relative; height: calc(var(--journey-screens, 5) * 100svh); background: var(--night); }
 .journey-stage.hero { position: sticky; top: 0; height: 100svh; min-height: 0; max-height: none; overflow: hidden; }
 
 /* 画布宿主铺满舞台；画布第一帧画完后淡入，占位图随之退场。 */
@@ -27,6 +27,23 @@
   word-break: keep-all; overflow-wrap: anywhere;
 }
 .journey-line + .journey-line { font-size: clamp(16px, 1.5vw, 21px); color: #dfe3d6; }
+
+/* 第四幕：标题居中偏上，让出下方的航海图。 */
+.journey-act-4 { justify-content: flex-start; padding-top: max(150px, 17vh); }
+.journey-kicker { margin: 0; font: 12px/1 var(--ui); letter-spacing: .14em; color: var(--gold, #d4b36e); opacity: 0; }
+.journey-title { margin: 14px 0 0; font: 500 clamp(30px, 3.6vw, 52px)/1.4 var(--display); letter-spacing: .04em; color: var(--moon, #f4eedc); text-shadow: 0 2px 30px #07110f; opacity: 0; }
+
+/* 航海图上的大陆名：位置由场景每帧投影写入。 */
+.journey-places { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.journey-place {
+  position: absolute; left: 0; top: 0; opacity: 0; white-space: nowrap; text-align: center;
+  font: 500 clamp(14px, 1.25vw, 18px)/1.3 var(--display); letter-spacing: .12em; color: var(--moon, #f4eedc);
+  text-shadow: 0 1px 10px #07110f, 0 0 2px #07110f;
+  padding: 7px 12px 8px; background: radial-gradient(closest-side, #07110fb8, #07110f00);
+}
+.journey-place small { display: block; margin-bottom: 4px; font: 10px/1 var(--ui); letter-spacing: .2em; color: var(--gold, #d4b36e); }
+.journey-place::after { content: ''; display: block; width: 5px; height: 5px; margin: 7px auto 0; background: var(--gold, #d4b36e); transform: rotate(45deg); box-shadow: 0 0 10px #d4b36e; }
+.journey[data-gl=off] .journey-places { display: none; }
 
 /* 底栏的分隔线兼作进度条。 */
 .journey .hero-bottom { position: absolute; }
