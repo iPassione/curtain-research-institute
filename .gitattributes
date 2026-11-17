@@ -1,0 +1,4 @@
+# 仓库内文本统一为 LF。构建与编辑脚本输出 LF，检出也用 LF，
+# 避免 Windows 上 autocrlf 让每次改稿都出现只有换行符差异的文件。
+* text=auto eol=lf
+*.ps1 text eol=crlf
