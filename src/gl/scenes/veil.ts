@@ -292,6 +292,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       sceneTarget?.setSize(Math.max(1, Math.round(w * dpr * 0.5)), Math.max(1, Math.round(h * dpr * 0.5)));
     },
     frame(dt, time) {
+      renderer.setClearColor(0x07110f, 1); // 渲染器与其他场景共用，每帧设回自己的底色
       shown = first ? target : shown + (target - shown) * (1 - Math.exp(-dt * 7));
       first = false;
       shared.uTime.value = time;

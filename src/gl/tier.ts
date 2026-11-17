@@ -9,13 +9,23 @@ export function forcedTier(): Tier | null {
   return t && (ORDER as string[]).includes(t) ? (t as Tier) : null;
 }
 
-let webgl2: boolean | null = null;
+let webgl2: boolean | null = null, software = false;
 export function hasWebGL2() {
   if (webgl2 === null) {
-    try { webgl2 = !!document.createElement('canvas').getContext('webgl2'); } catch { webgl2 = false; }
+    try {
+      const gl = document.createElement('canvas').getContext('webgl2');
+      webgl2 = !!gl;
+      // 没有显卡加速时（虚拟机、远程桌面、显卡被禁用），浏览器用 CPU 模拟 WebGL，三维场景会非常卡。
+      const info = gl?.getExtension('WEBGL_debug_renderer_info');
+      const renderer = info ? String(gl!.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+      software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch { webgl2 = false; }
   }
   return webgl2;
 }
+/** 是否为软件模拟的 WebGL（需先调用 hasWebGL2）。 */
+export const isSoftwareGL = () => (hasWebGL2(), software);
 
 /** 这次访问能否启用三维场景（决定首页结构，整个会话内保持不变）。 */
 export function glCapable() {
@@ -25,7 +35,7 @@ export function glCapable() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
   if (nav.connection?.saveData) return false;
   if (nav.deviceMemory !== undefined && nav.deviceMemory <= 2) return false;
-  return hasWebGL2();
+  return hasWebGL2() && !isSoftwareGL();
 }
 
 /** 起始档位：会话里降过档就沿用降后的档位，避免来回切换。 */

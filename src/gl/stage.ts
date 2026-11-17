@@ -137,7 +137,7 @@ class Stage {
   private fail() {
     const host = this.host;
     this.unmount();
-    host?.closest('[data-journey]')?.setAttribute('data-gl', 'off');
+    host?.closest('[data-gl]')?.setAttribute('data-gl', 'off');
   }
 }
 
