@@ -65,7 +65,7 @@ function unname(el: HTMLElement | null) {
   if (!el.getAttribute('style')) el.removeAttribute('style');
 }
 function transition(commit: () => void, id: string) {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } };
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; ready: Promise<void>; updateCallbackDone: Promise<void> } };
   if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { commit(); return; }
   const before = nameVisible(id);
   let after: HTMLElement | null = null;
@@ -76,7 +76,11 @@ function transition(commit: () => void, id: string) {
     // 只有一侧有标题时不做变形，避免标题从画面中央飞入飞出。
     if (!before) unname(after);
   });
-  vt.finished.finally(() => unname(after));
+  // 连续快速切换时，新的转场会中止上一个（AbortError）；页面更新照常执行，这里只需接住拒绝，避免未处理的报错。
+  const ignore = () => {};
+  vt.ready.catch(ignore);
+  vt.updateCallbackDone.catch(ignore);
+  vt.finished.catch(ignore).finally(() => unname(after));
 }
 
 export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (url: URL) => void) {
