@@ -1,0 +1,25 @@
+{
+  "_说明": "术语批注表。每条只把正文里已经出现的词指向一篇已公开的馆藏文章；悬停卡片显示那篇文章自己的类别与内容提要，不另写释义。增删词条后运行 npm run build:content。match 可选，列出正文中的其他写法。",
+  "terms": [
+    { "term": "蕴法石", "article": "stone" },
+    { "term": "界门", "article": "gates" },
+    { "term": "魔法联合部", "article": "ministry-government" },
+    { "term": "卡莫瑞亚", "article": "camoria" },
+    { "term": "艾森洛德", "article": "eisen" },
+    { "term": "茨威尔格诺", "article": "northlands" },
+    { "term": "埃斯佩兰萨", "article": "esperanza" },
+    { "term": "昂尚特维斯", "article": "enchantevis" },
+    { "term": "守护灵", "article": "guardian-spirits-study" },
+    { "term": "权柄", "article": "authority-research" },
+    { "term": "炼金术", "article": "alchemy" },
+    { "term": "和平条约", "article": "treaty-study" },
+    { "term": "加令", "article": "currency-study" },
+    { "term": "索比恩", "article": "currency-study" },
+    { "term": "六大世界", "article": "worlds-structure" },
+    { "term": "时间长河", "article": "worlds-time" },
+    { "term": "镜中世界", "article": "worlds-mirror" },
+    { "term": "骑士团", "article": "knights-community", "match": ["诺伐圣廷骑士团"] },
+    { "term": "现代咒语", "article": "old-and-modern-spells" },
+    { "term": "古代魔法", "article": "old-and-modern-spells" }
+  ]
+}

@@ -65,10 +65,48 @@ export function buildContent() {
   fs.writeFileSync(path.join(out, 'exhibits.json'), JSON.stringify(exhibits));
   fs.writeFileSync(path.join(out, 'travel.json'), JSON.stringify(travel));
   fs.writeFileSync(path.join(out, 'street.json'), JSON.stringify(street));
-  return { articles: data.articles.length, sections: data.sections.length };
+  const glossary = buildGlossary(data);
+  fs.writeFileSync(path.join(out, 'glossary.json'), JSON.stringify(glossary));
+  const search = buildSearch(data, { exhibits, travel, street });
+  fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(search));
+  return { articles: data.articles.length, sections: data.sections.length, terms: glossary.length, docs: search.length };
+}
+
+// 术语批注：content/glossary.json 只写「词 → 文章」，卡片文字取自那篇文章自己的类别与提要。
+// 指向不存在的文章时构建失败；在其他文章正文里一次都没出现的词条被略去并打印提示。
+function buildGlossary(data) {
+  const table = JSON.parse(read('content/glossary.json')).terms;
+  const byId = new Map(data.articles.map(a => [a.id, a]));
+  const bodies = data.articles.map(a => [a.id, chapters(a).flatMap(c => c.paragraphs).join('\n')]);
+  const result = [];
+  for (const t of table) {
+    const a = byId.get(t.article);
+    if (!a) throw new Error(`术语「${t.term}」指向不存在的文章：${t.article}`);
+    const forms = [...new Set([...(t.match || []), t.term])].sort((x, y) => y.length - x.length);
+    const used = bodies.some(([id, body]) => id !== a.id && forms.some(f => body.includes(f)));
+    if (!used) { console.warn(`术语「${t.term}」未在其他文章正文中出现，已略去。`); continue; }
+    result.push({ term: t.term, forms, article: a.id, title: a.title, eyebrow: a.eyebrow, lead: a.lead });
+  }
+  return result;
+}
+
+// 全站检索：每篇文章一条（标题、副标题、提要）+ 每章一条；馆藏、展品、旅行目的地、街巷地点各一条。
+// 文档按 type 区分，url 是站内地址（文章章节带 #chapter-n 锚点，展室带状态参数）。
+function buildSearch(data, rooms) {
+  const docs = [];
+  for (const s of data.sections) docs.push({ type: 'section', url: `?page=${s.id}`, title: s.title, meta: '馆藏', text: s.description });
+  for (const a of data.articles) {
+    const section = data.sections.find(s => s.id === a.section)?.title || '';
+    docs.push({ type: 'article', url: `?article=${a.id}`, title: a.title, meta: a.eyebrow, text: [a.subtitle, a.lead].join(' ') });
+    chapters(a).forEach((c, i) => docs.push({ type: 'chapter', url: `?article=${a.id}#chapter-${i + 1}`, title: c.heading, meta: `${a.title} · 第 ${i + 1} 章`, text: c.paragraphs.join(''), section }));
+  }
+  for (const x of rooms.exhibits) docs.push({ type: 'room', url: `?page=exhibits&object=${x.id}`, title: x.name, meta: `造物陈列室 · ${x.kind}`, text: [x.lead, ...x.chapters.flatMap(c => [c.title, ...c.paragraphs])].join(' ') });
+  for (const c of rooms.travel.continents) docs.push({ type: 'room', url: `?page=travel&to=${c.id}`, title: `前往${c.name}`, meta: '五大陆旅行案头', text: [c.climate, ...c.arrival, ...c.manners].join(' ') });
+  for (const p of rooms.street.places) docs.push({ type: 'room', url: `?page=street&place=${p.id}`, title: p.name, meta: `城市切片 · ${p.kind}`, text: [p.lead, ...Object.values(p.scenes).flatMap(s => [s.title, ...s.paragraphs])].join(' ') });
+  return docs;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const r = buildContent();
-  console.log(`Prepared ${r.articles} articles in ${r.sections} sections → public/data/`);
+  console.log(`Prepared ${r.articles} articles in ${r.sections} sections, ${r.terms} glossary terms, ${r.docs} search docs → public/data/`);
 }
