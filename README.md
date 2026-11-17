@@ -126,9 +126,9 @@ node tests/visual/journey-shots.mjs http://127.0.0.1:8765 tests/visual/journey
 
 截图保存在 `tests/visual/journey/`（不纳入版本）。
 
-地理馆立体航海图、魔法研究室施法台的截图脚本分别是 `tests/visual/chart-shots.mjs`、`tests/visual/casting-shots.mjs`，用法相同，保存在 `tests/visual/chart/`、`tests/visual/casting/`。航海图的高度图由 `node scripts/derive-height.mjs` 从 `assets-src/nautical-chart.png` 派生，换了航海图才需要重新运行。
+地理馆立体航海图、魔法研究室施法台、诸界观测下潜的截图脚本分别是 `tests/visual/chart-shots.mjs`、`tests/visual/casting-shots.mjs`、`tests/visual/worlds-shots.mjs`，用法相同，保存在 `tests/visual/chart/`、`tests/visual/casting/`、`tests/visual/worlds/`。航海图的高度图由 `node scripts/derive-height.mjs` 从 `assets-src/nautical-chart.png` 派生，换了航海图才需要重新运行。
 
-`npm test` 分两组运行：普通页面先跑；三维场景（首页、航海图、施法台）在其后依次单独跑。测试环境没有显卡加速，WebGL 由 CPU 模拟，和其他测试同时跑会互相拖慢。
+`npm test` 分两组运行：普通页面先跑；三维场景（首页、航海图、施法台、诸界）在其后依次单独跑。测试环境没有显卡加速，WebGL 由 CPU 模拟，和其他测试同时跑会互相拖慢。
 
 ## 保存与同步
 

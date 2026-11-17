@@ -14,7 +14,17 @@ async function openTable(page: Page) {
   await page.goto('/?page=magic&gl=lite');
   await page.locator('.casting-stage').waitFor();
   await page.evaluate(() => document.querySelector('.casting-stage')!.scrollIntoView({ block: 'center', behavior: 'instant' }));
-  await expect(page.locator('.casting-stage')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
+  try {
+    await expect(page.locator('.casting-stage')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
+  } catch (error) {
+    // 偶发未就绪时，把现场状态带进错误信息，便于判断原因
+    const state = await page.evaluate(() => {
+      const h = document.querySelector('.casting-gl'), c = h?.querySelector('canvas'), r = h?.getBoundingClientRect();
+      const st = (window as any).__curtainStage;
+      return { gl: (document.querySelector('.casting-stage') as HTMLElement).dataset.gl, hosts: document.querySelectorAll('.casting-gl').length, canvasIn: c ? 'first-host' : document.querySelector('canvas.gl-canvas')?.parentElement?.className, rect: r && [Math.round(r.top), Math.round(r.height), innerHeight], ready: c?.classList.contains('is-ready'), vis: document.visibilityState, stage: st && { scene: !!st.scene, inView: st.inView, visible: st.visible, raf: st.raf, warmup: st.warmup, tier: st.tier } };
+    });
+    throw new Error(`施法台未就绪：${JSON.stringify(state)}；控制台：${errors.join(' | ')}`, { cause: error });
+  }
 }
 const pressed = (page: Page) => page.locator('.phase-controls [data-step][aria-pressed="true"]');
 
