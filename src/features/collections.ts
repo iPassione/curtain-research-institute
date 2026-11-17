@@ -1,4 +1,6 @@
 // @ts-nocheck —— 由旧 collections.js 逐字迁移（诸界观测、巫师日常与货币换算），随馆藏页挂载。
+import { glCapable } from '../gl/tier';
+
 export function mountCollections(ctx, data, page) {
   if (!['worlds','daily'].includes(page)) return;
   const root = ctx.main.querySelector('.page-inner');
@@ -25,6 +27,9 @@ export function mountCollections(ctx, data, page) {
     };
     panel.querySelectorAll('[data-world]').forEach(b=>b.addEventListener('click',()=>render(b.dataset.world)));
     render('matter');
+    // 层积的六界：支持 WebGL2、有显卡加速、未要求减弱动态时，在页头与正文之间插入纵向下潜（按需载入）。
+    const hero = ctx.main.querySelector('.page-hero');
+    if (hero && glCapable()) import('../gl/worlds-room').then(m => { if (!ctx.signal.aborted) m.mountWorldsDive(ctx, hero, worlds); });
   } else {
     const topics = [
       {id:'money',name:'货币与交易',heading:'一枚索比恩，可以买什么？',text:'索比恩用于日常消费，加令承担大额交易。一个生鸡蛋约需一索比恩；这套通用货币由魔法联合部发行，以其权威和力量维系信用。',links:['daily-market','daily-table']},

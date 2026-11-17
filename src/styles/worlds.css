@@ -1,0 +1,37 @@
+/* V3 阶段 5：诸界观测「层积的六界」。页头与正文之间的纵向下潜：固定一屏的舞台、各界说明卡、右侧深度刻度。 */
+@layer v3 {
+.worlds-dive { position: relative; height: 620svh; background: #050a10; }
+.worlds-dive-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.worlds-dive-gl { position: absolute; inset: 0; }
+.worlds-dive-gl .gl-canvas { display: block; width: 100%; height: 100%; }
+.worlds-dive[data-gl=loading] .worlds-dive-cards { opacity: 0; }
+
+.worlds-dive-skip {
+  position: absolute; top: 18px; right: 22px; z-index: 3; font: 12px/1 var(--ui); letter-spacing: .08em; color: #d4b36e;
+  border-bottom: 1px solid #d4b36e66; padding: 6px 0;
+}
+.worlds-dive-skip:hover { color: #f1e2b4; border-color: #f1e2b4; }
+
+.worlds-dive-cards { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.worlds-card {
+  position: absolute; left: 8%; top: 50%; translate: 0 -50%; width: min(440px, 62vw); opacity: 0;
+  padding: 26px 28px 24px; background: linear-gradient(90deg, #050a10d9, #050a1099 70%, #050a1000);
+  border-left: 1px solid #d4b36e66; color: #e6e9e2; text-shadow: 0 1px 12px #050a10;
+}
+.worlds-card-pos { margin: 0; font: 11px/1.6 var(--ui); letter-spacing: .14em; color: #d4b36e; }
+.worlds-card-name { margin: 10px 0 4px; font: 500 clamp(32px, 3.6vw, 52px)/1.3 var(--display); letter-spacing: .06em; color: #f4eedc; }
+.worlds-card-title { margin: 0 0 14px; font: 17px/1.7 var(--display); color: #e3d5a1; }
+.worlds-card-text { margin: 0 0 16px; font: 15px/2 var(--display); text-wrap: pretty; text-autospace: normal; }
+.worlds-card-auth { margin: 0; font: 13px/1.8 var(--display); color: #c9d3c8; }
+.worlds-card-auth span { display: block; font: 10px/1.6 var(--ui); letter-spacing: .14em; color: #a98b55; margin-bottom: 2px; }
+
+/* 右侧深度刻度 */
+.worlds-dive-depth { position: absolute; right: 22px; top: 70px; bottom: 40px; width: 1px; background: #d4b36e33; z-index: 2; }
+.worlds-dive-depth > span { position: absolute; inset: 0; background: #d4b36e; transform-origin: top; transform: scaleY(0); }
+
+@media (max-width: 700px) {
+  .worlds-card { left: 16px; right: 16px; width: auto; top: auto; bottom: 28px; translate: none; padding: 20px 20px 18px; background: linear-gradient(0deg, #050a10f0, #050a10b3 75%, #050a1000); }
+  .worlds-card-text { font-size: 14px; line-height: 1.9; }
+  .worlds-dive-depth { display: none; }
+}
+}
