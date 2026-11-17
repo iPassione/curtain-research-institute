@@ -11,4 +11,30 @@
 .chart-overlay .chart-upright { transform: none !important; }
 .nautical-stage[data-gl=on] .chart-hint { z-index: 3; color: #4a3a24; text-shadow: 0 0 6px #e4d3b1; }
 .nautical-stage[data-gl=on] .chart-place[aria-pressed=true] .chart-label { opacity: 1; visibility: visible; }
+
+/* 立体模式新增：昼夜、缩放、界门往来（沿用原工具栏的米色与细边） */
+.chart-extra { grid-column: 1 / -1; display: grid; gap: 12px; padding-top: 12px; border-top: 1px dashed #a88b5e66; }
+.chart-extra[hidden] { display: none; }
+.chart-extra-row { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; }
+.chart-hour-label { font-size: 11px; display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+.chart-hour-label output { font-variant-numeric: tabular-nums; min-width: 40px; }
+#chart-hour { width: 100%; accent-color: #75552d; min-height: 24px; }
+.chart-extra button, .chart-route select {
+  cursor: pointer; background: #f0e1bf; border: 1px solid #a08354; color: #503c23; font: 12px var(--display); min-height: 36px; padding: 6px 12px;
+}
+.chart-extra button:hover, .chart-extra button[aria-pressed=true] { background: #6a5334; color: #fff0cb; }
+.chart-zoom { display: flex; }
+.chart-zoom button { width: 38px; padding: 4px; font: 18px Georgia, serif; }
+.chart-zoom button + button { border-left: 0; }
+.chart-route { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0; padding: 0; border: 0; }
+.chart-route legend { float: left; margin-right: 6px; font-size: 11px; color: #57442a; }
+.chart-route label { font-size: 11px; display: flex; gap: 6px; align-items: center; }
+.chart-route select { min-height: 34px; padding: 4px 8px; cursor: pointer; }
+.route-travel { font-size: 12px; color: #6a4a1d; border-bottom: 1px solid currentColor; padding: 4px 0; }
+.route-status { flex-basis: 100%; margin: 0; font-size: 11px; color: #665235; min-height: 1em; }
+.chart-extra button:focus-visible, .chart-route select:focus-visible, #chart-hour:focus-visible, .route-travel:focus-visible { outline: 2px solid #8d5920; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .chart-extra-row { grid-template-columns: 1fr auto; }
+  .chart-hour-label { grid-column: 1 / -1; }
+}
 }

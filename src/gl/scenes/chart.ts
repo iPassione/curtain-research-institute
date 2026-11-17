@@ -3,7 +3,7 @@
 // 界门弧线：魔法联合部总部在中央大陆的普诺伊瓦，各大陆分部经界门与总部往来，
 // 所以只画中央大陆与其余四块大陆之间的四条弧线，表示「存在往来」，不表示航线、距离或费用。
 import {
-  Color, CylinderGeometry, Group, Mesh, PerspectiveCamera, PlaneGeometry, QuadraticBezierCurve3, Scene,
+  AdditiveBlending, BufferAttribute, BufferGeometry, Color, CylinderGeometry, Group, Mesh, Points, RingGeometry, PerspectiveCamera, PlaneGeometry, QuadraticBezierCurve3, Scene,
   ShaderMaterial, SRGBColorSpace, Texture, TextureLoader, TubeGeometry, Vector2, Vector3, LinearFilter,
 } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -30,7 +30,15 @@ export interface ChartState {
   hot(): number;
   /** 额外俯仰（度），由鼠标纵向拖动给出。 */
   pitch(): number;
+  /** 一天中的时刻（0–24）。不提供时为 15 点，与原光照一致。 */
+  hour?(): number;
+  /** 缩放倍数（1 为总览）。 */
+  zoom?(): number;
+  /** 界门往来：从 from 到 to 的一趟，start 为开始时刻（performance.now 毫秒）。 */
+  route?(): { from: number; to: number; start: number } | null;
 }
+/** 一趟界门往来的动画时长（毫秒）。 */
+export const ROUTE_MS = 2600;
 export interface ChartScene extends GLScene { places: Vector3[] }
 
 /** positions：五大陆在图上的百分比位置（与原转盘点位一致）。onProject 每帧给出各大陆在画布上的像素坐标。 */
@@ -53,6 +61,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
     uTime: { value: 0 }, uFocus: { value: 0 }, uHover: { value: 0 },
     uCenters: { value: centers }, uSel: { value: 0 }, uHot: { value: -1 },
     uLight: { value: lightLocal }, uInk: { value: lin('#5c4628') }, uShadowTint: { value: lin('#b9c3c8') },
+    uSunCol: { value: new Color(1, 1, 1) }, uAmbient: { value: 0.7 }, uSunStr: { value: 0.42 }, uNight: { value: 0 },
   };
   const reliefGeometry = new PlaneGeometry(S, S, tier === 'full' ? 320 : 160, tier === 'full' ? 320 : 160);
   reliefGeometry.rotateX(-Math.PI / 2);
@@ -61,13 +70,15 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
   group.add(relief);
 
   // 圆盘侧缘
-  const rimUniforms = { uColor: { value: lin('#8d7246') }, uLight: { value: lightWorld } };
+  const rimColor = lin('#8d7246');
+  const rimUniforms = { uColor: { value: rimColor.clone() }, uLight: { value: lightWorld } };
   const rim = new Mesh(new CylinderGeometry(DISC, DISC, 0.9, 160, 1, true), new ShaderMaterial({ uniforms: rimUniforms, vertexShader: rimVertex, fragmentShader: rimFragment }));
   rim.position.y = -0.45;
   group.add(rim);
 
   // 桌面
-  const groundUniforms = { uInner: { value: lin('#e4d3b1') }, uOuter: { value: lin('#b59a6a') }, uDisc: { value: DISC }, uFar: { value: 70 }, uShadowOffset: { value: new Vector2(1.4, 1.0) } };
+  const groundInner = lin('#e4d3b1'), groundOuter = lin('#b59a6a'), nightInner = lin('#2b3138'), nightOuter = lin('#14181d');
+  const groundUniforms = { uInner: { value: groundInner.clone() }, uOuter: { value: groundOuter.clone() }, uDisc: { value: DISC }, uFar: { value: 70 }, uShadowOffset: { value: new Vector2(1.4, 1.0) } };
   const ground = new Mesh(new PlaneGeometry(600, 600), new ShaderMaterial({ uniforms: groundUniforms, vertexShader: groundVertex, fragmentShader: groundFragment }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.9;
@@ -83,7 +94,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
     mid.y += 5.5;
     const curve = new QuadraticBezierCurve3(from.clone(), mid, to.clone());
     const material = new ShaderMaterial({
-      uniforms: { uColor: { value: lin('#d4b36e') }, uTime: reliefUniforms.uTime, uGlow: { value: 0 }, uPhase: { value: i * 0.27 }, uReveal: { value: 0 } },
+      uniforms: { uColor: { value: lin('#d4b36e') }, uTime: reliefUniforms.uTime, uGlow: { value: 0 }, uPhase: { value: i * 0.27 }, uReveal: { value: 0 }, uHead: { value: -1 } },
       vertexShader: arcVertex, fragmentShader: arcFragment, transparent: true, depthWrite: false, blending: 2, // AdditiveBlending
     });
     const mesh = new Mesh(new TubeGeometry(curve, 64, 0.075, 6, false), material);
@@ -91,6 +102,68 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
     group.add(mesh);
     return { mesh, material, target: i + 1 };
   });
+
+  // 界门往来：所选两块大陆之间的一道弧线，一点光沿弧线走过去，抵达时在目的地荡开一圈
+  let routeKey = '', routeCurve: QuadraticBezierCurve3 | null = null, routeMesh: Mesh | null = null;
+  const routeMaterial = new ShaderMaterial({
+    uniforms: { uColor: { value: lin('#f1e2b4') }, uTime: reliefUniforms.uTime, uGlow: { value: 1 }, uPhase: { value: 0 }, uReveal: { value: 0 }, uHead: { value: 0 } },
+    vertexShader: arcVertex, fragmentShader: arcFragment, transparent: true, depthWrite: false, blending: AdditiveBlending,
+  });
+  const travellerGeometry = new BufferGeometry();
+  travellerGeometry.setAttribute('position', new BufferAttribute(new Float32Array(3), 3));
+  const travellerMaterial = new ShaderMaterial({
+    uniforms: { uColor: { value: lin('#fff2c2') }, uSize: { value: 34 }, uAlpha: { value: 0 } },
+    vertexShader: /* glsl */ `uniform float uSize; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = uSize; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: /* glsl */ `uniform vec3 uColor; uniform float uAlpha; void main(){ float d = length(gl_PointCoord - 0.5); gl_FragColor = vec4(uColor * (smoothstep(0.5, 0.0, d) * 0.9 + smoothstep(0.12, 0.0, d) * 2.0) * uAlpha, 1.0); }`,
+    transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
+  });
+  const traveller = new Points(travellerGeometry, travellerMaterial);
+  traveller.frustumCulled = false;
+  traveller.renderOrder = 4;
+  group.add(traveller);
+  const ringMaterial = new ShaderMaterial({
+    uniforms: { uColor: { value: lin('#f1e2b4') }, uAlpha: { value: 0 } },
+    vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `uniform vec3 uColor; uniform float uAlpha; void main(){ gl_FragColor = vec4(uColor * uAlpha, 1.0); }`,
+    transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending, side: 2,
+  });
+  const ring = new Mesh(new RingGeometry(0.85, 1, 64), ringMaterial);
+  ring.rotation.x = -Math.PI / 2;
+  ring.renderOrder = 4;
+  group.add(ring);
+  const tmp = new Vector3();
+  const updateRoute = () => {
+    const r = state.route?.() ?? null;
+    const key = r ? `${r.from}-${r.to}-${r.start}` : '';
+    if (key !== routeKey) {
+      routeKey = key;
+      if (routeMesh) { group.remove(routeMesh); routeMesh.geometry.dispose(); routeMesh = null; }
+      routeCurve = null;
+      if (r && r.from !== r.to) {
+        const a = local[r.from], b = local[r.to];
+        const mid = a.clone().lerp(b, 0.5);
+        mid.y += 4 + a.distanceTo(b) * 0.28;
+        routeCurve = new QuadraticBezierCurve3(a.clone(), mid, b.clone());
+        routeMesh = new Mesh(new TubeGeometry(routeCurve, 80, 0.09, 6, false), routeMaterial);
+        routeMesh.renderOrder = 3;
+        group.add(routeMesh);
+      }
+    }
+    if (!r || !routeCurve) { travellerMaterial.uniforms.uAlpha.value = 0; ringMaterial.uniforms.uAlpha.value = 0; routeMaterial.uniforms.uReveal.value = 0; return; }
+    const t = (performance.now() - r.start) / ROUTE_MS;
+    const travel = Math.min(1, Math.max(0, t / 0.72));
+    const eased = travel < 0.5 ? 2 * travel * travel : 1 - Math.pow(-2 * travel + 2, 2) / 2;
+    routeCurve.getPoint(eased, tmp);
+    routeMaterial.uniforms.uHead.value = travel < 1 ? eased : 1.2;
+    (travellerGeometry.attributes.position.array as Float32Array).set([tmp.x, tmp.y, tmp.z]);
+    travellerGeometry.attributes.position.needsUpdate = true;
+    travellerMaterial.uniforms.uAlpha.value = travel < 1 ? Math.min(1, t * 6) : Math.max(0, 1 - (t - 0.72) * 5);
+    routeMaterial.uniforms.uReveal.value = Math.min(1, t * 4) * (t > 1.6 ? Math.max(0.35, 1 - (t - 1.6)) : 1);
+    const arrive = (t - 0.72) / 0.28;
+    ring.position.copy(local[state.route!()!.to]).setY(AMP * 0.9);
+    ring.scale.setScalar(0.3 + Math.max(0, arrive) * 4.5);
+    ringMaterial.uniforms.uAlpha.value = arrive > 0 && arrive < 1 ? (1 - arrive) * 1.2 : 0;
+  };
 
   // 贴图
   let disposed = false, ready = 0;
@@ -140,13 +213,32 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
       tilt.uniforms.uTexel.value = [1 / (w * dpr), 1 / (h * dpr)];
     },
     frame(dt, time) {
-      renderer.setClearColor(0xc9b088, 1);
+      renderer.setClearColor(new Color(0x1c2126).lerp(new Color(0xc9b088), Math.min(1, Math.max(0, (Math.sin((((state.hour?.() ?? 15) - 6) / 12) * Math.PI) + 0.12) / 0.4))), 1);
       const k = first ? 1 : 1 - Math.exp(-dt * 3.2);
       first = false;
       reliefUniforms.uTime.value = time;
       const angle = state.angle() * deg;
       group.rotation.y = -angle; // 顺时针为正：从上往下看顺时针转
+
+      // 昼夜：太阳绕图一周（15 点时与原光照方向一致）；夜里换成偏冷的月光，整体压暗
+      const hour = state.hour?.() ?? 15;
+      const sunAz = Math.atan2(-0.4, -0.55) + ((hour - 15) / 24) * Math.PI * 2;
+      const sunElev = Math.sin(((hour - 6) / 12) * Math.PI); // 6 点日出，18 点日落
+      const day = Math.min(1, Math.max(0, (sunElev + 0.12) / 0.4));
+      const elev = (day > 0.02 ? Math.max(0.12, sunElev) : 0.5) * 1.0;
+      const lightAz = day > 0.02 ? sunAz : sunAz + Math.PI; // 夜里月亮在另一侧
+      lightWorld.set(Math.cos(lightAz) * Math.cos(elev), Math.sin(Math.max(0.12, elev)), Math.sin(lightAz) * Math.cos(elev)).normalize();
       lightLocal.copy(lightWorld).applyAxisAngle(new Vector3(0, 1, 0), angle);
+      const dusk = Math.max(0, 1 - Math.abs(sunElev) / 0.35) * day; // 晨昏时偏暖
+      (reliefUniforms.uSunCol.value as Color).setRGB(1, 1 - 0.18 * dusk, 1 - 0.35 * dusk).lerp(new Color(0.55, 0.66, 0.95), 1 - day);
+      reliefUniforms.uAmbient.value = 0.16 + 0.54 * day;
+      reliefUniforms.uSunStr.value = 0.2 + 0.22 * day + 0.15 * dusk;
+      reliefUniforms.uNight.value = 1 - day;
+      (groundUniforms.uInner.value as Color).copy(nightInner).lerp(groundInner, day);
+      (groundUniforms.uOuter.value as Color).copy(nightOuter).lerp(groundOuter, day);
+      (rimUniforms.uColor.value as Color).copy(rimColor).multiplyScalar(0.35 + 0.65 * day);
+      groundUniforms.uShadowOffset.value.set(-lightWorld.x * 2.2, -lightWorld.z * 2.2);
+      updateRoute();
 
       const sel = state.selected(), hot = state.hot();
       reliefUniforms.uSel.value = sel.index;
@@ -168,7 +260,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
       want.set(0, 0, 0);
       if (sel.focused) want.copy(local[sel.index]).setY(0).applyAxisAngle(new Vector3(0, 1, 0), -angle);
       target.lerp(want, k);
-      const wantDist = fitDistance(DISC) * (1 - 0.45 * focusAmt);
+      const wantDist = fitDistance(DISC) * (1 - 0.45 * focusAmt) / (state.zoom?.() ?? 1);
       dist += (wantDist - dist) * k;
       const wantPitch = Math.min(80, Math.max(30, 52 + 10 * focusAmt + state.pitch()));
       pitch += (wantPitch - pitch) * k;

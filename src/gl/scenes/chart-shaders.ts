@@ -21,7 +21,8 @@ export const reliefFragment = /* glsl */ `
 ${NOISE}
 uniform sampler2D uMap, uHeight;
 uniform vec2 uTexel;
-uniform float uAmp, uSize, uTime, uFocus, uHover;
+uniform float uAmp, uSize, uTime, uFocus, uHover, uAmbient, uSunStr, uNight;
+uniform vec3 uSunCol;
 uniform vec2 uCenters[5];
 uniform int uSel, uHot;
 uniform vec3 uLight, uInk, uShadowTint;
@@ -45,8 +46,10 @@ void main(){
 
   // 侧光照出浮雕；背光面略偏冷，像纸面上的阴影。
   float lit = max(dot(N, uLight), 0.0);
-  float shade = 0.7 + 0.42 * lit;
-  col *= shade;
+  float shade = uAmbient + uSunStr * lit * (1.0 - 0.45 * uNight);
+  col *= shade * uSunCol;
+  // 夜里：整体偏冷偏暗，背光面更深
+  col = mix(col, col * vec3(0.55, 0.68, 0.95), uNight * 0.5);
   col = mix(col, col * uShadowTint, (1.0 - lit) * 0.25);
 
   // 纸纹
@@ -110,12 +113,18 @@ varying float vT;
 void main(){ vT = uv.x; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 export const arcFragment = /* glsl */ `
 uniform vec3 uColor;
-uniform float uTime, uGlow, uPhase, uReveal;
+uniform float uTime, uGlow, uPhase, uReveal, uHead;
 varying float vT;
 void main(){
   float pulse = pow(fract(vT - uTime * 0.22 + uPhase), 10.0);
   float ends = smoothstep(0.0, 0.06, vT) * smoothstep(1.0, 0.94, vT);
   float a = (0.28 + 0.5 * uGlow + pulse * (0.6 + uGlow)) * ends * uReveal;
+  // 界门往来：光点所在处最亮，身后拖一段渐隐的尾迹，尚未走到的部分保持暗淡
+  if (uHead >= 0.0) {
+    float behind = vT <= uHead ? exp(-(uHead - vT) * 3.5) : 0.0;
+    float head = exp(-pow((vT - uHead) * 26.0, 2.0));
+    a = (0.12 + 1.4 * behind + 3.0 * head) * ends * uReveal;
+  }
   gl_FragColor = vec4(uColor * a, 1.0);
 }`;
 
