@@ -1,0 +1,14 @@
+/* V3 阶段 3：地理馆立体航海图。画布铺在原转盘的位置；三维就绪后原转盘图隐藏，五个大陆按钮移到画布之上的叠层。 */
+@layer v3 {
+.chart-gl { position: absolute; inset: 0; z-index: 0; }
+.chart-gl .gl-canvas { display: block; width: 100%; height: 100%; }
+.nautical-stage[data-gl=on] .nautical-wheel { visibility: hidden; }
+.chart-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.chart-overlay .chart-place { pointer-events: auto; transition: opacity .25s; }
+.chart-overlay .chart-place.is-offscreen { opacity: 0; pointer-events: none; }
+.chart-overlay .chart-place.is-offscreen:focus { opacity: 1; } /* 跑出画面的按钮只能用键盘到达，聚焦即显示 */
+/* 原转盘里标签要反向旋转以保持正立；立体模式下按钮不再随图旋转，取消反向旋转。 */
+.chart-overlay .chart-upright { transform: none !important; }
+.nautical-stage[data-gl=on] .chart-hint { z-index: 3; color: #4a3a24; text-shadow: 0 0 6px #e4d3b1; }
+.nautical-stage[data-gl=on] .chart-place[aria-pressed=true] .chart-label { opacity: 1; visibility: visible; }
+}

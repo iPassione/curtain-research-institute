@@ -3,6 +3,7 @@
 import { picture } from '../lib/images';
 import type { Manifest } from '../data/types';
 import type { RouteContext } from '../router';
+import { glCapable } from '../gl/tier';
 
 export function mountNautical(ctx: RouteContext, data: Manifest) {
   const { signal } = ctx;
@@ -19,7 +20,7 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
   const frame = stage.querySelector('.nautical-frame') as HTMLElement;
   frame.tabIndex = 0; frame.setAttribute('role', 'group'); frame.setAttribute('aria-label', '可旋转的五大陆航海图'); frame.setAttribute('aria-describedby', 'chart-instructions');
   const tools = document.createElement('div'); tools.className = 'chart-tools';
-  tools.innerHTML = '<div class="chart-buttons"><button type="button" data-turn="-15" aria-label="逆时针旋转15度">↶</button><button type="button" class="chart-reset">复位朝北</button><button type="button" data-turn="15" aria-label="顺时针旋转15度">↷</button><button type="button" class="chart-auto" aria-pressed="false">缓慢转动</button></div><label class="chart-angle-label" for="chart-angle">转向 <output for="chart-angle" aria-live="off">0°</output></label><input id="chart-angle" type="range" min="-180" max="180" step="1" value="0" aria-label="旋转海图角度"><p>风格化航海图，海岸线与比例为艺术示意。</p>';
+  tools.innerHTML = '<div class="chart-buttons"><button type="button" data-turn="-15" aria-label="逆时针旋转15度">↶</button><button type="button" class="chart-reset">复位朝北</button><button type="button" data-turn="15" aria-label="顺时针旋转15度">↷</button><button type="button" class="chart-auto" aria-pressed="false">缓慢转动</button></div><label class="chart-angle-label" for="chart-angle">转向 <output for="chart-angle" aria-live="off">0°</output></label><input id="chart-angle" type="range" min="-180" max="180" step="1" value="0" aria-label="旋转海图角度"><p>风格化航海图，海岸线与比例为艺术示意。<span class="chart-gl-note" hidden>金色弧线示意中央大陆与各大陆之间经界门的往来，不表示航线与距离。</span></p>';
   stage.after(tools);
   // The selected continent's details follow the map and its controls.
   const left = document.createElement('div'); left.className = 'nautical-left'; stage.before(left); left.append(stage, tools);
@@ -32,7 +33,10 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
   const slider = tools.querySelector('input') as HTMLInputElement;
   const output = tools.querySelector('output') as HTMLOutputElement;
   const autoButton = tools.querySelector('.chart-auto') as HTMLButtonElement;
-  let angle = 0, automatic = !reduced.matches, visible = false, raf = 0, previous = 0, drag: { id: number; x: number; angle: number } | null = null;
+  let angle = 0, automatic = !reduced.matches, visible = false, raf = 0, previous = 0, drag: { id: number; x: number; y: number; angle: number; pitch: number; t: number } | null = null;
+  // 立体航海图用到的状态：选中的大陆、是否已点选（镜头飞近）、悬停/聚焦的大陆、纵向拖动给出的俯仰、松手后的惯性。
+  let selectedIndex = 0, focused = false, hotIndex = -1, pitchOffset = 0, velocity = 0, spin = 0;
+  const gl3d = () => stage.dataset.gl === 'on';
   const normalise = (n: number) => ((n + 180) % 360 + 360) % 360 - 180;
   function paint() { const n = normalise(angle); rotor.style.transform = `rotate(${n}deg)`; labels.forEach(l => l.style.transform = `rotate(${-n}deg)`); slider.value = String(Math.round(n)); output.value = `${Math.round(n)}°`; frame.dataset.angle = String(n); }
   function cancel() { if (raf) cancelAnimationFrame(raf); raf = 0; previous = 0; }
@@ -40,22 +44,63 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
   function sync() { autoButton.disabled = reduced.matches; autoButton.setAttribute('aria-pressed', String(automatic)); autoButton.textContent = reduced.matches ? '静态模式' : automatic ? '暂停转动' : '缓慢转动'; cancel(); if (automatic && visible && !document.hidden && !reduced.matches) raf = requestAnimationFrame(tick); }
   function stop() { automatic = false; sync(); }
   tools.querySelectorAll<HTMLElement>('[data-turn]').forEach(b => b.addEventListener('click', () => { stop(); angle += Number(b.dataset.turn); paint(); }, { signal }));
-  tools.querySelector('.chart-reset')!.addEventListener('click', () => { stop(); angle = 0; paint(); }, { signal });
+  tools.querySelector('.chart-reset')!.addEventListener('click', () => { stop(); angle = 0; focused = false; pitchOffset = 0; paint(); }, { signal });
   autoButton.addEventListener('click', () => { automatic = !automatic; sync(); }, { signal });
   slider.addEventListener('input', () => { stop(); angle = Number(slider.value); paint(); }, { signal });
   slider.addEventListener('focus', stop, { signal });
-  stage.querySelectorAll('[data-chart-place]').forEach((button, i) => button.addEventListener('click', () => { stop(); stage.querySelectorAll('[data-chart-place]').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j))); originalButtons[i].click(); }, { signal }));
+  stage.querySelectorAll('[data-chart-place]').forEach((button, i) => button.addEventListener('click', () => { stop(); selectedIndex = i; focused = true; stage.querySelectorAll('[data-chart-place]').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j))); originalButtons[i].click(); }, { signal }));
   stage.querySelectorAll('[data-chart-place]').forEach(button => button.addEventListener('pointerenter', () => { if (matchMedia('(hover: hover)').matches) stop(); }, { signal }));
+  stage.querySelectorAll<HTMLElement>('[data-chart-place]').forEach((button, i) => {
+    const on = () => { hotIndex = i; }, off = () => { if (hotIndex === i) hotIndex = -1; };
+    button.addEventListener('pointerenter', on, { signal }); button.addEventListener('pointerleave', off, { signal });
+    button.addEventListener('focus', on, { signal }); button.addEventListener('blur', off, { signal });
+  });
   frame.addEventListener('keydown', e => { if (e.target !== frame) return; if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); stop(); angle += e.key === 'ArrowLeft' ? -5 : 5; paint(); } if (e.key === 'Home') { e.preventDefault(); stop(); angle = 0; paint(); } }, { signal });
-  frame.addEventListener('pointerdown', e => { if ((e.target as Element).closest('button') || e.button !== 0) return; stop(); drag = { id: e.pointerId, x: e.clientX, angle }; frame.setPointerCapture(e.pointerId); frame.classList.add('is-dragging'); }, { signal });
-  frame.addEventListener('pointermove', e => { if (!drag || e.pointerId !== drag.id) return; angle = drag.angle + (e.clientX - drag.x) / frame.clientWidth * 220; paint(); }, { signal });
-  function release(e: PointerEvent) { if (drag && e.pointerId === drag.id) { drag = null; frame.classList.remove('is-dragging'); if (frame.hasPointerCapture(e.pointerId)) frame.releasePointerCapture(e.pointerId); } }
+  frame.addEventListener('pointerdown', e => { if ((e.target as Element).closest('button') || e.button !== 0) return; stop(); cancelAnimationFrame(spin); velocity = 0; drag = { id: e.pointerId, x: e.clientX, y: e.clientY, angle, pitch: pitchOffset, t: performance.now() }; frame.setPointerCapture(e.pointerId); frame.classList.add('is-dragging'); }, { signal });
+  frame.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const before = angle, now = performance.now();
+    angle = drag.angle + (e.clientX - drag.x) / frame.clientWidth * 220;
+    // 立体模式：记录角速度供松手后的惯性；鼠标纵向拖动调节俯仰（触屏纵向仍用于滚动页面）。
+    if (gl3d()) {
+      const dt = Math.max(1, now - drag.t) / 1000;
+      velocity = velocity * 0.6 + ((angle - before) / dt) * 0.4;
+      drag.t = now;
+      if (e.pointerType === 'mouse') pitchOffset = Math.max(-18, Math.min(22, drag.pitch + (e.clientY - drag.y) * 0.15));
+    }
+    paint();
+  }, { signal });
+  function coast() {
+    // 惯性：每秒约衰减到原来的 8%，低于 2°/秒 时停下。
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      velocity *= Math.pow(0.08, dt);
+      if (Math.abs(velocity) < 2 || reduced.matches) { velocity = 0; return; }
+      angle += velocity * dt; paint();
+      spin = requestAnimationFrame(step);
+    };
+    spin = requestAnimationFrame(step);
+  }
+  function release(e: PointerEvent) { if (drag && e.pointerId === drag.id) { if (gl3d() && performance.now() - drag.t < 80) coast(); drag = null; frame.classList.remove('is-dragging'); if (frame.hasPointerCapture(e.pointerId)) frame.releasePointerCapture(e.pointerId); } }
   frame.addEventListener('pointerup', release, { signal }); frame.addEventListener('pointercancel', release, { signal }); frame.addEventListener('lostpointercapture', () => { drag = null; frame.classList.remove('is-dragging'); }, { signal });
   stage.addEventListener('focusin', () => stop(), { signal });
   const observer = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; sync(); }, { threshold: .1 });
   observer.observe(stage);
   document.addEventListener('visibilitychange', sync, { signal });
   reduced.addEventListener('change', () => { if (reduced.matches) automatic = false; sync(); }, { signal });
-  ctx.onCleanup(() => { observer.disconnect(); cancel(); });
+  ctx.onCleanup(() => { observer.disconnect(); cancel(); cancelAnimationFrame(spin); });
   paint(); sync();
+  // 立体航海图：支持 WebGL2 且未要求减弱动态时，在原转盘上叠加三维浮雕（three.js 按需载入）。
+  if (glCapable()) import('../gl/chart-room').then(m => {
+    if (signal.aborted) return;
+    m.mountChartRoom(ctx, {
+      stage, frame, positions,
+      buttons: [...stage.querySelectorAll<HTMLButtonElement>('[data-chart-place]')],
+      angle: () => angle,
+      selected: () => ({ index: selectedIndex, focused }),
+      hot: () => hotIndex,
+      pitch: () => pitchOffset,
+    });
+  });
 }
