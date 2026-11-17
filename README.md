@@ -124,6 +124,10 @@ node tests/visual/journey-shots.mjs http://127.0.0.1:8765 tests/visual/journey
 
 截图保存在 `tests/visual/journey/`（不纳入版本）。
 
+地理馆立体航海图的截图脚本是 `tests/visual/chart-shots.mjs`，用法相同，保存在 `tests/visual/chart/`。航海图的高度图由 `node scripts/derive-height.mjs` 从 `assets-src/nautical-chart.png` 派生，换了航海图才需要重新运行。
+
+`npm test` 分两组运行：普通页面先跑；三维场景（`chart`、`journey`）在其后单独跑。测试环境没有显卡加速，WebGL 由 CPU 模拟，和其他测试同时跑会互相拖慢。
+
 ## 保存与同步
 
 在自己的工作分支提交修改并推送，供另一台电脑接续。开始下一轮修改前，先确认本地工作已保存，再获取远端更新；用快进合并，遇到分歧先检查两边的修改。

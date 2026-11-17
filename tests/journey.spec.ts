@@ -1,6 +1,9 @@
 // 阶段 2：首页「穿过帷幕」。测试环境的 Chromium 用软件 WebGL2，帧率很低，所以一律用 ?gl= 强制档位（强制时不自动降档）。
 import { expect, test } from '@playwright/test';
 
+// 测试环境没有显卡加速（软件模拟 WebGL），三维页面就绪较慢，放宽单项时限。
+test.setTimeout(90_000);
+
 let errors: string[] = [];
 test.beforeEach(({ page }) => {
   errors = [];
@@ -15,7 +18,7 @@ const scrollJourney = (page: import('@playwright/test').Page, at: number) =>
 test('支持 WebGL2 时启用场景：画布就绪、对读屏隐藏，文字都在 DOM 中', async ({ page }) => {
   await page.goto('/?gl=lite');
   const journey = page.locator('[data-journey]');
-  await expect(journey).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(journey).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   await expect(page.locator('.journey-gl canvas.gl-canvas')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.locator('h1')).toContainText('世界藏在');
   await expect(page.locator('.journey-act-2')).toContainText('公元 1077 年');
@@ -39,7 +42,7 @@ test('减弱动态与 ?gl=static：保留原首页主视觉，不载入三维代
 
 test('任意滚动位置刷新，文字状态与位置一致', async ({ page }) => {
   await page.goto('/?gl=lite');
-  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   await expect(page.locator('.journey-stage > .hero-copy')).toBeVisible();
   await scrollJourney(page, 0.33);
   await page.reload();
@@ -54,14 +57,14 @@ test('任意滚动位置刷新，文字状态与位置一致', async ({ page }) 
 
 test('离开首页时画布停用并移出页面，回来后复用', async ({ page }) => {
   await page.goto('/?gl=lite');
-  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   await page.locator('.header nav a', { hasText: '阅览室' }).click();
   await expect(page).toHaveURL(/page=library/);
   await expect(page.locator('main canvas')).toHaveCount(0);
   expect(await page.locator('canvas.gl-canvas').count()).toBe(1);
   expect(await page.locator('canvas.gl-canvas').evaluate(c => !!c.closest('[hidden]'))).toBe(true);
   await page.goBack();
-  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   expect(await page.locator('canvas.gl-canvas').count()).toBe(1);
 });
 
@@ -85,7 +88,7 @@ test('文章页不载入三维代码；?debug=gl 显示帧率与档位', async (
 
 test('第四幕：标题与五大陆地名出现在航海图上，结尾画面暗下交给馆藏入口', async ({ page }) => {
   await page.goto('/?gl=lite');
-  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
   await expect(page.locator('.journey-place')).toHaveCount(5);
   await expect(page.locator('.journey-places')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.locator('.journey-act-4')).toHaveAttribute('aria-hidden', 'true');
@@ -94,7 +97,8 @@ test('第四幕：标题与五大陆地名出现在航海图上，结尾画面�
   // 地名的位置由场景逐帧投影：五个都落在视口里，且彼此分开。
   await expect.poll(() => page.locator('.journey-place').first().evaluate(el => Number(el.style.opacity || 0)), { timeout: 15000 }).toBeGreaterThan(0.5);
   const boxes = await page.locator('.journey-place').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
-  for (const b of boxes) { expect(b.x).toBeGreaterThan(0); expect(b.x).toBeLessThan(1440); expect(b.y).toBeGreaterThan(0); expect(b.y).toBeLessThan(900); }
+  const vp = page.viewportSize()!;
+  for (const b of boxes) { expect(b.x).toBeGreaterThan(0); expect(b.x).toBeLessThan(vp.width); expect(b.y).toBeGreaterThan(0); expect(b.y).toBeLessThan(vp.height); }
   const [center, nw, ne, sw, se] = boxes;
   expect(nw.x).toBeLessThan(center.x); expect(nw.y).toBeLessThan(center.y);
   expect(ne.x).toBeGreaterThan(center.x); expect(ne.y).toBeLessThan(center.y);

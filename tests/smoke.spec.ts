@@ -267,7 +267,7 @@ test('单页切换到达的页面与直接打开逐字一致', async ({ page }) 
     await page.waitForTimeout(150);
     // 航海图的自转角度、首页 GSAP 入场的中间位移随时间变化，比较前统一去掉；
     // 首页画布（三维场景）与其就绪状态取决于渲染时机，也一并去掉。
-    const strip = (s: any) => ({ ...s, html: s.html.replace(/<canvas[^>]*><\/canvas>/g, '').replace(/ data-gl="[^"]*"/g, '').replace(/ style="translate:[^"]*"/g, '').replace(/rotate\([^)]*\)/g, '').replace(/data-angle="[^"]*"/g, '').replace(/value="-?\d+°"|>-?\d+°</g, '') });
+    const strip = (s: any) => ({ ...s, html: s.html.replace(/<canvas[^>]*><\/canvas>/g, '').replace(/ data-gl="[^"]*"/g, '').replace(/ style="left:[^"]*px[^"]*"/g, '').replace(/ class="chart-place is-offscreen"/g, ' class="chart-place"').replace(/ style="translate:[^"]*"/g, '').replace(/rotate\([^)]*\)/g, '').replace(/data-angle="[^"]*"/g, '').replace(/value="-?\d+°"|>-?\d+°</g, '') });
     expect(strip(await snapshot()), url).toEqual(strip(direct[url]));
   }
 });
