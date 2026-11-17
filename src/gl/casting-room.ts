@@ -6,11 +6,11 @@
 import { Vector2 } from 'three';
 import type { RouteContext } from '../router';
 import { getStage } from './stage';
-import { createCastingScene, floatType, type Element as CastElement } from './scenes/casting';
+import { createCastingScene, floatType, FX_DURATION, type Element as CastElement } from './scenes/casting';
 
 const ELEMENTS: { id: CastElement; name: string }[] = [{ id: 0, name: '火焰' }, { id: 1, name: '冰霜' }, { id: 2, name: '防御' }];
 const STABLE_TEXT = '咒文稳定并进一步雕琢已经成形的魔力，使其更接近施法者的意图。';
-const T_GATHER = 1.1, T_SHAPE = 1.3, T_STABLE = 2.6, T_RELEASE = 2.4, T_COLLAPSE = 1.0;
+const T_GATHER = 1.1, T_SHAPE = 1.3, T_STABLE = 2.6;
 const DEFAULT_DIR = new Vector2(0.94, 0.34).normalize();
 
 export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
@@ -70,7 +70,7 @@ export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
   };
   const idle = () => {
     mode = 'idle'; held = 0;
-    Object.assign(w, { gather: 0, shape: 0, stable: 0, release: 0, collapse: 0, arc: 0 });
+    Object.assign(w, { gather: 0, shape: 0, stable: 0 });
     setSpell(0);
     holdButton.textContent = '按住施法';
     holdButton.classList.remove('is-ready');
@@ -98,8 +98,7 @@ export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
       }
     } else if (mode === 'release' || mode === 'collapse') {
       timer -= dt;
-      if (mode === 'release') { w.arc = timer > 0.6 ? 1 : 0; w.release = timer > T_RELEASE - 1.3 ? 1 : 0; }
-      if (timer <= 0) { idle(); w.phase = 0; }
+      if (timer <= 0) { idle(); w.phase = 0; status.textContent = ''; }
     }
     if (mode !== 'idle' && mode !== 'showcase') raf = requestAnimationFrame(loop);
   };
@@ -108,7 +107,6 @@ export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
   const begin = () => {
     if (mode === 'casting' || mode === 'release') return;
     mode = 'casting'; held = 0; phaseShown = -1;
-    Object.assign(w, { release: 0, collapse: 0, arc: 0 });
     status.textContent = '';
     holdButton.textContent = '继续按住…';
     run();
@@ -117,18 +115,21 @@ export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
     if (mode !== 'casting') return;
     if (w.stable >= 0.99) {
       // 导出
-      mode = 'release'; timer = T_RELEASE;
-      w.dir.copy(aim); w.release = 1; w.arc = 1; w.phase = 3.99;
+      // 导出：三种结构各有专属效果，演完后粒子就地熄灭、重新铺开，直接进入下一次施法
+      mode = 'release'; timer = FX_DURATION[w.element];
+      scene.release(w.element, aim);
+      Object.assign(w, { gather: 0, shape: 0, stable: 0, phase: 3.99 });
+      setSpell(0);
       showPhase(3);
       status.textContent = `${ELEMENTS[w.element].name}已导出。`;
     } else {
       // 反噬：结构溃散，回到起势
-      mode = 'collapse'; timer = T_COLLAPSE;
-      Object.assign(w, { gather: 0, shape: 0, stable: 0, collapse: 1, phase: 0 });
+      mode = 'collapse'; timer = FX_DURATION[3];
+      scene.collapse();
+      Object.assign(w, { gather: 0, shape: 0, stable: 0, phase: 0 });
       setSpell(0);
       showPhase(0);
       status.textContent = '结构未稳，力量散去。';
-      window.setTimeout(() => { w.collapse = 0; }, 450);
     }
     holdButton.textContent = '按住施法';
     holdButton.classList.remove('is-ready');
@@ -173,15 +174,16 @@ export function mountCastingRoom(ctx: RouteContext, panel: HTMLElement) {
     if (i < 0 || i === phaseShown) return;
     phaseShown = i;
     if (i === 3) {
-      Object.assign(w, { gather: 1, shape: 1, stable: 1, collapse: 0, phase: 3.99 });
-      w.dir.copy(DEFAULT_DIR);
-      mode = 'release'; timer = T_RELEASE; w.release = 1; w.arc = 1;
-      setSpell(1);
+      Object.assign(w, { gather: 0, shape: 0, stable: 0, phase: 3.99 });
+      mode = 'release'; timer = FX_DURATION[w.element];
+      scene.release(w.element, DEFAULT_DIR);
+      setSpell(0);
       run();
       return;
     }
+    if (mode === 'release' || mode === 'collapse') return; // 效果演完前不打断
     mode = 'showcase';
-    Object.assign(w, { gather: 1, shape: i >= 1 ? 1 : 0, stable: i >= 2 ? 1 : 0, release: 0, collapse: 0, arc: 0, phase: i + 0.99 });
+    Object.assign(w, { gather: 1, shape: i >= 1 ? 1 : 0, stable: i >= 2 ? 1 : 0, phase: i + 0.99 });
     setSpell(i >= 2 ? 1 : 0);
   });
   steps.forEach(b => showcase.observe(b, { attributes: true, attributeFilter: ['aria-pressed'] }));
