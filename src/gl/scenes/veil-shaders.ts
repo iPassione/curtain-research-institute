@@ -173,7 +173,7 @@ void main(){
 export const membraneFragment = /* glsl */ `
 uniform sampler2D uScene;
 uniform vec2 uResolution;
-uniform float uReveal, uRefract, uTime;
+uniform float uReveal, uRefract, uTime, uInside, uNear;
 uniform vec3 uGold, uTeal, uVeil;
 varying vec3 vWorld;
 varying vec3 vNormalW;
@@ -181,10 +181,15 @@ varying vec3 vViewNormal;
 varying vec2 vUv;
 varying float vRipple;
 varying float vNoise;
-float gridLine(float x, float scale){
+// 织纹线：远看是一像素的细线；贴近时线宽按格子比例（frac）放大，与格子一起变大。
+float gridLine(float x, float scale, float frac){
   float v = x * scale;
   float w = fwidth(v);
-  return 1.0 - smoothstep(0.0, w * 1.5, abs(fract(v) - 0.5) - 0.5 + w);
+  float d = min(fract(v), 1.0 - fract(v));
+  float core = min(frac, w * 2.5); // 线宽上限约 5 像素，贴得再近也是细线
+  float line = 1.0 - smoothstep(core, core + w * 1.5, d);
+  float halo = (1.0 - smoothstep(0.0, core + w * 10.0, d)) * 0.35 * step(0.0001, frac); // 贴近时的柔光
+  return max(line, halo);
 }
 void main(){
   vec3 N = normalize(vNormalW);
@@ -195,14 +200,17 @@ void main(){
   float phase = ndv * 1.7 + vNoise * 0.9 + uTime * 0.015;
   float t = 0.5 + 0.5 * cos(6.2831853 * phase);
   vec3 film = mix(uGold, uTeal, t * 0.7);
-  float weave = max(gridLine(vUv.x, 96.0), gridLine(vUv.y, 22.0)) * (0.25 + 0.75 * fres);
+  float frac = 0.035 * uNear;
+  float weave = max(gridLine(vUv.x, 96.0, frac), gridLine(vUv.y, 22.0, frac)) * (0.25 + 0.75 * max(fres, uNear));
   float edge = smoothstep(0.55, 1.0, fres);
   vec3 glow = film * (pow(fres, 1.8) * 0.9 + vRipple * 0.8) + uVeil * edge * 0.75 + film * weave * 0.04;
   vec3 col = glow;
   float alpha = uReveal * clamp(fres * 0.95 + vRipple * 0.5 + weave * 0.05, 0.0, 1.0);
 #ifndef NEAR_SIDE
   // 远侧内壁（先画）：只留边缘光与织纹，不做折射，避免与近侧叠成重影。
-  gl_FragColor = vec4(glow * 0.75, uReveal * clamp(fres * 0.85 + vRipple * 0.3 + weave * 0.04, 0.0, 1.0));
+  // 进入穹顶后，内壁的经纬织纹成为头顶的天幕：神明用执念织就的结界。
+  vec3 inner = glow * 0.75 + film * weave * uInside * 0.55;
+  gl_FragColor = vec4(inner, uReveal * clamp(fres * 0.85 + vRipple * 0.3 + weave * (0.04 + uInside * 0.2), 0.0, 1.0));
   return;
 #endif
   if (uRefract > 0.0) {
@@ -213,20 +221,29 @@ void main(){
     col = bg * (1.0 - fres * 0.25) + glow;
     alpha = uReveal * clamp(0.22 + fres * 0.78 + vRipple * 0.3, 0.0, 1.0);
   }
+  // 贴近薄膜：经纬织纹放大、清楚起来，膜面泛起一层干涉色，让人知道「快要碰到它了」。
+  col += film * (weave * 1.1 + 0.05) * uNear;
+  alpha = max(alpha, uReveal * uNear * clamp(0.18 + weave * 0.7, 0.0, 1.0));
   gl_FragColor = vec4(col, alpha);
 }`;
 
 // 收尾：极轻的颗粒与暗角（在 sRGB 输出之后）。
 export const finishShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.035 }, uVignette: { value: 0.35 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.035 }, uVignette: { value: 0.35 }, uCross: { value: 0 }, uVeil: { value: [0.95, 0.89, 0.71] } },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
 uniform sampler2D tDiffuse;
-uniform float uTime, uGrain, uVignette;
+uniform float uTime, uGrain, uVignette, uCross;
+uniform vec3 uVeil;
 varying vec2 vUv;
 float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453); }
 void main(){
-  vec4 c = texture2D(tDiffuse, vUv);
+  // 穿幕：镜头贴着薄膜穿过的一瞬，整个画面像水面一样荡开，并泛起一层帷光。
+  vec2 d0 = vUv - 0.5;
+  float r = length(d0);
+  vec2 uv = vUv + (r > 0.0 ? d0 / r : vec2(0.0)) * sin(r * 38.0 - uTime * 7.0) * 0.012 * uCross;
+  vec4 c = texture2D(tDiffuse, uv);
+  c.rgb = mix(c.rgb, uVeil, uCross * 0.2 * (0.55 + 0.45 * smoothstep(0.7, 0.0, r)));
   float g = rand(vUv * 1000.0 + fract(uTime * 7.0)) - 0.5;
   c.rgb += g * uGrain;
   vec2 d = vUv - 0.5;
@@ -234,3 +251,26 @@ void main(){
   gl_FragColor = c;
 }`,
 };
+
+// 穹顶之下的五大陆航海图：铺在海面上，圆形遮罩，夜色中压暗，中心一盏暖光，墨线泛金。
+// 只在镜头进入穹顶后显现（uInside），从外面看不到。
+export const chartVertex = /* glsl */ `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+export const chartFragment = /* glsl */ `
+uniform sampler2D uMap;
+uniform float uInside, uReady;
+uniform vec3 uGold, uNight;
+varying vec2 vUv;
+void main(){
+  vec2 c = vUv - 0.5;
+  float r = length(c) * 2.0;
+  float mask = 1.0 - smoothstep(0.9, 0.985, r);
+  vec3 tex = texture2D(uMap, vUv).rgb;
+  float lamp = 1.0 - smoothstep(0.0, 1.05, r);
+  vec3 col = tex * (0.2 + 0.46 * lamp);
+  float ink = 1.0 - smoothstep(0.08, 0.32, dot(tex, vec3(0.3333)));
+  col += uGold * ink * 0.22 * lamp;
+  col = mix(uNight, col, smoothstep(1.0, 0.75, r));
+  gl_FragColor = vec4(col, mask * uInside * uReady);
+}`;

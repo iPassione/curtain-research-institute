@@ -6,8 +6,10 @@ import type { RouteContext } from '../router';
 import { getStage } from './stage';
 import { createVeilScene, type VeilScene } from './scenes/veil';
 
-/** 目前完成到第二幕（显形）。后两幕完成后改为 1。 */
-export const JOURNEY_END = 0.45;
+/** 滚动全程对应的场景进度上限（四幕已全部完成）。 */
+export const JOURNEY_END = 1;
+/** 五大陆在航海图上的位置（百分比），与地理馆航海图的点位一致；顺序同 manifest.regions。 */
+const CHART_POSITIONS: [number, number][] = [[50, 50], [29, 29], [71, 29], [29, 71], [71, 71]];
 
 export function mountJourney(ctx: RouteContext) {
   const root = ctx.main.querySelector<HTMLElement>('[data-journey]');
@@ -20,7 +22,8 @@ export function mountJourney(ctx: RouteContext) {
   if (stage.tier === 'static') root.dataset.gl = 'off';
   else {
     try {
-      scene = createVeilScene(stage.renderer, stage.tier);
+      const places = [...root.querySelectorAll<HTMLElement>('.journey-place')].map((el, i) => ({ el, u: CHART_POSITIONS[i]?.[0] ?? 50, v: CHART_POSITIONS[i]?.[1] ?? 50 }));
+      scene = createVeilScene(stage.renderer, stage.tier, places);
       stage.mount(host, scene, () => { root.dataset.gl = 'on'; });
       ctx.onCleanup(() => stage.unmount());
     } catch (error) {
@@ -46,6 +49,10 @@ export function mountJourney(ctx: RouteContext) {
     tl.to('.journey-stage > .dome', { opacity: 0, duration: 0.14 }, 0.24);
     tl.fromTo('.journey-act-2 .journey-line', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.05, stagger: 0.025, ease: 'power2.out' }, 0.24);
     tl.to('.journey-act-2 .journey-line', { opacity: 0, y: -26, duration: 0.035, stagger: 0.01, ease: 'power1.in' }, 0.405);
+    // 三 穿幕：无文字。四 穹顶之下：标题浮现；最后画面暗下，交给下方的馆藏入口。
+    tl.fromTo('.journey-act-4 > *', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.05, stagger: 0.02, ease: 'power2.out' }, 0.82);
+    tl.to('.journey-act-4 > *', { opacity: 0, y: -18, duration: 0.03, ease: 'power1.in' }, 0.955);
+    tl.to('.journey-gl', { opacity: 0, duration: 0.05 }, 0.95);
     tl.set({}, {}, JOURNEY_END);
     scene?.setProgress((tl.scrollTrigger?.progress ?? 0) * JOURNEY_END, true);
   }, ctx.main);
