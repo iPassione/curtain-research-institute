@@ -46,11 +46,20 @@ class Stage {
     document.body.append(this.parking);
     this.parking.append(this.canvas);
 
-    this.observer = new IntersectionObserver(([e]) => { this.inView = e.isIntersecting; this.schedule(); });
+    // 同一批通知里可能有同一元素的多条记录（例如挂上时还不可见、紧接着滚进视口），以最后一条为准；
+    // 只取第一条会让舞台一直以为画布不在视口里，循环永远不启动。
+    this.observer = new IntersectionObserver(entries => {
+      const mine = entries.filter(e => e.target === this.host);
+      if (!mine.length) return;
+      this.inView = mine[mine.length - 1].isIntersecting;
+      this.schedule();
+    });
     this.resizeObserver = new ResizeObserver(() => this.resize());
     document.addEventListener('visibilitychange', () => { this.visible = !document.hidden; this.last = 0; this.schedule(); });
     this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.fail(); });
 
+    // 自动化测试环境下暴露舞台，便于诊断（普通访客不会触发）
+    if (navigator.webdriver) (window as unknown as { __curtainStage?: Stage }).__curtainStage = this;
     if (new URLSearchParams(location.search).get('debug') === 'gl') {
       this.debug = document.createElement('div');
       this.debug.className = 'gl-debug';
@@ -106,8 +115,11 @@ class Stage {
     const dt = this.last ? Math.min(0.1, (now - this.last) / 1000) : 1 / 60;
     this.last = now;
     this.time += dt;
-    this.scene.frame(dt, this.time);
-    if (this.onReady && ++this.warmup >= 2) { this.canvas.classList.add('is-ready'); this.onReady(); this.onReady = null; }
+    // 单帧出错时不让循环静默中断（那样画面会永远停在「加载中」）：记录错误并退回静态图。
+    try { this.scene.frame(dt, this.time); }
+    catch (error) { console.error('三维场景渲染出错，已退回静态版本。', error); this.fail(); return; }
+    this.warmup = Math.min(this.warmup + 1, 1000); // 每帧都计数：自动降档要在预热 30 帧之后才判断
+    if (this.onReady && this.warmup >= 2) { this.canvas.classList.add('is-ready'); this.onReady(); this.onReady = null; }
     this.monitor(dt * 1000, now);
     this.schedule();
   };
