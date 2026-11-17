@@ -41,10 +41,10 @@ test('任意滚动位置刷新，文字状态与位置一致', async ({ page }) 
   await page.goto('/?gl=lite');
   await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
   await expect(page.locator('.journey-stage > .hero-copy')).toBeVisible();
-  await scrollJourney(page, 0.75);
+  await scrollJourney(page, 0.33);
   await page.reload();
   await expect(page.locator('[data-journey]')).toHaveCount(1);
-  await scrollJourney(page, 0.75);
+  await scrollJourney(page, 0.33);
   await expect.poll(() => page.locator('.journey-line').first().evaluate(el => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.95);
   await expect(page.locator('.journey-stage > .hero-copy')).toBeHidden();
   await scrollJourney(page, 0);
@@ -81,4 +81,25 @@ test('文章页不载入三维代码；?debug=gl 显示帧率与档位', async (
   expect(scripts.filter(u => /journey-/.test(u))).toEqual([]);
   await page.goto('/?gl=lite&debug=gl');
   await expect(page.locator('.gl-debug')).toContainText('档位 lite', { timeout: 20000 });
+});
+
+test('第四幕：标题与五大陆地名出现在航海图上，结尾画面暗下交给馆藏入口', async ({ page }) => {
+  await page.goto('/?gl=lite');
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 20000 });
+  await expect(page.locator('.journey-place')).toHaveCount(5);
+  await expect(page.locator('.journey-places')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('.journey-act-4')).toHaveAttribute('aria-hidden', 'true');
+  await scrollJourney(page, 0.88);
+  await expect.poll(() => page.locator('.journey-title').evaluate(el => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.95);
+  // 地名的位置由场景逐帧投影：五个都落在视口里，且彼此分开。
+  await expect.poll(() => page.locator('.journey-place').first().evaluate(el => Number(el.style.opacity || 0)), { timeout: 15000 }).toBeGreaterThan(0.5);
+  const boxes = await page.locator('.journey-place').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  for (const b of boxes) { expect(b.x).toBeGreaterThan(0); expect(b.x).toBeLessThan(1440); expect(b.y).toBeGreaterThan(0); expect(b.y).toBeLessThan(900); }
+  const [center, nw, ne, sw, se] = boxes;
+  expect(nw.x).toBeLessThan(center.x); expect(nw.y).toBeLessThan(center.y);
+  expect(ne.x).toBeGreaterThan(center.x); expect(ne.y).toBeLessThan(center.y);
+  expect(sw.x).toBeLessThan(center.x); expect(sw.y).toBeGreaterThan(center.y);
+  expect(se.x).toBeGreaterThan(center.x); expect(se.y).toBeGreaterThan(center.y);
+  await scrollJourney(page, 1);
+  await expect.poll(() => page.locator('.journey-gl').evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(0.05);
 });

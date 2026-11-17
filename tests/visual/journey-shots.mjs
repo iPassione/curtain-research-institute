@@ -7,8 +7,9 @@ import path from 'node:path';
 const [base = 'http://127.0.0.1:4180', out = 'tests/visual/journey'] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=default'] });
-const shots = [['1-外海', 0.02], ['2a-显形之初', 0.6], ['2b-显形', 0.85], ['2c-第二幕末', 0.995]];
-for (const [label, w, h, tier] of [['桌面', 1440, 900, 'full'], ['桌面精简档', 1440, 900, 'lite'], ['手机', 390, 844, 'lite']]) {
+const shots = (process.env.SHOTS || '1-外海:0.05,2-显形:0.38,3a-推近:0.5,3b-贴近薄膜:0.565,3c-穿幕:0.585,3d-进入:0.66,4a-升起:0.76,4b-穹顶之下:0.87,4c-交接:0.975').split(',').map(x => { const [n, v] = x.split(':'); return [n, Number(v)]; });
+const devices = [['桌面', 1440, 900, 'full'], ['桌面精简档', 1440, 900, 'lite'], ['手机', 390, 844, 'lite']].filter(([l]) => !process.env.ONLY || process.env.ONLY.split(',').includes(l));
+for (const [label, w, h, tier] of devices) {
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   await page.goto(`${base}/?gl=${tier}`);
   await page.waitForFunction(() => document.querySelector('[data-journey]')?.getAttribute('data-gl') === 'on', null, { timeout: 20000 });
