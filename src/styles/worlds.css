@@ -1,6 +1,6 @@
 /* V3 阶段 5：诸界观测「层积的六界」。页头与正文之间的纵向下潜：固定一屏的舞台、各界说明卡、右侧深度刻度。 */
 @layer v3 {
-.worlds-dive { position: relative; height: 620svh; background: #050a10; }
+.worlds-dive { position: relative; height: 760svh; background: #050a10; }
 .worlds-dive-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .worlds-dive-gl { position: absolute; inset: 0; }
 .worlds-dive-gl .gl-canvas { display: block; width: 100%; height: 100%; }
@@ -24,6 +24,14 @@
 .worlds-card-text { margin: 0 0 16px; font: 15px/2 var(--display); text-wrap: pretty; text-autospace: normal; }
 .worlds-card-auth { margin: 0; font: 13px/1.8 var(--display); color: #c9d3c8; }
 .worlds-card-auth span { display: block; font: 10px/1.6 var(--ui); letter-spacing: .14em; color: #a98b55; margin-bottom: 2px; }
+
+/* 揭晓：「时间长河」居中，落在长河下方 */
+.worlds-card[data-card=time] {
+  left: 50%; top: auto; bottom: 9vh; translate: -50% 0; width: min(520px, 84vw); text-align: center;
+  border-left: 0; border-top: 1px solid #d4b36e66; padding-top: 22px;
+  background: radial-gradient(ellipse at 50% 70%, #050a10e6, #050a10a6 55%, #050a1000 80%);
+}
+.worlds-card[data-card=time] .worlds-card-name { font-size: clamp(38px, 4.4vw, 64px); letter-spacing: .14em; }
 
 /* 右侧深度刻度 */
 .worlds-dive-depth { position: absolute; right: 22px; top: 70px; bottom: 40px; width: 1px; background: #d4b36e33; z-index: 2; }

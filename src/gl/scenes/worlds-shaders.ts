@@ -1,12 +1,20 @@
-// 诸界观测「层积的六界」：一个全屏片元着色器。镜头像钻探岩芯一样往下穿过一根竖直的「诸界柱」，
+// 诸界观测「层积的六界」：一个全屏片元着色器。
 // 依据《六大世界》：「现实如层积的岩石，上下堆叠」——最上层星之世界，中层物质、灵、镜三界并立，最下层亡者的归处；
-// 时间长河贯穿所有世界。层与层之间是沉积岩一样的地层带。
-// 柱上的纵坐标（单位：屏）：0–1.15 星界，1.15–1.45 地层，1.45–3.7 中层三界，3.7–4.0 地层，4.0–5.2 亡者世界。
+// 时间长河贯穿所有世界，它不承载空间，以持续流淌的维度贯穿诸界。
+//
+// 诸界柱上的纵坐标（单位：屏，向下为正）：
+//   0–1 星之世界 · 1–2 长河（衔接）· 2–3 中层三界 · 3–4 长河（衔接）· 4–5 亡者世界 · 5–6 长河（揭晓）
+// 世界跟着诸界柱移动；时间长河跟着画面——无论往哪个方向滚，它都在画面中央向下流，读者是随着它一路漂下来的。
+// 在世界之中，长河收窄、变淡、退到深处；在衔接段与最后，它展开成画面的主体。
 export const worldsVertex = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
 export const worldsFragment = /* glsl */ `
-uniform float uTime, uDepth, uAspect, uFocus, uRiverX, uFade;
+uniform float uTime, uDepth, uAspect, uFocus, uFade;
 varying vec2 vUv;
+
+const vec3 GOLD = vec3(0.83, 0.70, 0.43);
+const vec3 VEIL = vec3(0.95, 0.89, 0.71);
+const vec3 TEAL = vec3(0.55, 0.78, 0.76);
 
 float h1(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float h2(vec2 p){ return fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453); }
@@ -15,127 +23,191 @@ float noise(vec2 x){
   return mix(mix(h1(i), h1(i + vec2(1, 0)), f.x), mix(h1(i + vec2(0, 1)), h1(i + vec2(1, 1)), f.x), f.y);
 }
 float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * noise(p); p = p * 2.03 + 7.1; a *= 0.5; } return s; }
-vec3 srgb(vec3 c){ return c; } // 本场景直接画到屏幕（不经后期合成），颜色按显示值书写
+// 抗锯齿的细线：d 为到线的距离，w 为线宽（屏幕高度单位）
+float hair(float d, float w){ float aa = fwidth(d) * 1.2; return 1.0 - smoothstep(w, w + aa, abs(d)); }
 
-// 星之世界：深蓝夜空；星点沿同心椭圆轨道严格运行（相位固定、速度只取决于轨道半径），细金色轨道线；
-// 上方一片极淡的金色光晕（天上神国坐落其中，不描绘具体形象）。
+// ---------- 星之世界：秩序与星辰 ----------
+// 带透视的同心椭圆轨道（细点线），星点严格沿轨道运行，角速度只由半径决定，没有随机扰动；
+// 星点带细小的十字星芒；一条极淡的天穹光带斜贯夜空；上方一片克制的金色光晕（天上神国坐落其中，不描绘形象）。
 vec3 stars(vec2 p, float y){
-  vec3 col = mix(srgb(vec3(0.02, 0.04, 0.09)), srgb(vec3(0.05, 0.09, 0.16)), smoothstep(-0.2, 1.2, y));
-  vec2 c = vec2(0.0, 0.55);
-  vec2 q = (p - c) * vec2(1.0, 2.2);
-  float r = length(q);
-  float ang = atan(q.y, q.x);
-  for (int i = 1; i <= 7; i++) {
-    float R = float(i) * 0.17;
-    col += srgb(vec3(0.83, 0.70, 0.43)) * (1.0 - smoothstep(0.0, 0.0035 * float(i) * 0.5 + 0.002, abs(r - R))) * 0.18;
-    // 每条轨道上若干颗星：角速度只由半径决定（开普勒式），没有随机扰动
-    float n = 3.0 + float(i);
-    float w = 0.35 / pow(R, 1.5);
-    float a = ang - uTime * w * 0.12;
-    float k = fract(a / 6.2831853 * n);
-    float d = length(vec2((k - 0.5) * 6.2831853 / n * R, r - R));
-    col += srgb(vec3(1.0, 0.95, 0.82)) * exp(-d * d * 9000.0) * 1.6;
+  vec3 col = mix(vec3(0.012, 0.022, 0.05), vec3(0.03, 0.06, 0.10), smoothstep(-0.3, 0.9, y));
+  // 天穹光带
+  float band = exp(-pow((p.y + p.x * 0.35 + 0.05) * 3.2, 2.0));
+  col += vec3(0.16, 0.18, 0.24) * band * (0.5 + 0.5 * fbm(p * 5.0)) * 0.6;
+  // 远星
+  vec2 g = p * 140.0, gi = floor(g);
+  float s = step(0.988, h1(gi));
+  col += vec3(0.85, 0.88, 1.0) * s * smoothstep(0.18, 0.0, length(fract(g) - 0.5)) * (0.4 + 0.6 * h2(gi)) * (0.7 + 0.3 * sin(uTime * (1.0 + h2(gi) * 2.0) + h1(gi) * 20.0));
+  // 透视轨道：中心在画面上方，纵向压扁
+  vec2 c = vec2(0.0, -0.18);
+  vec2 q = (p - c) * vec2(1.0, 3.0);
+  float r = length(q), ang = atan(q.y, q.x);
+  for (int i = 1; i <= 6; i++) {
+    float R = 0.12 + float(i) * 0.115;
+    float dotted = step(0.5, fract(ang * (18.0 + float(i) * 8.0) / 6.2832));
+    col += GOLD * hair(r - R, 0.0012 * 3.0) * 0.32 * dotted;
+    float n = 2.0 + float(i);
+    float w = 0.22 / pow(R, 1.5);
+    float a = ang + uTime * w * 0.1;
+    float k = fract(a / 6.2832 * n);
+    vec2 sp = vec2((k - 0.5) * 6.2832 / n * R, (r - R) / 3.0);
+    float d = length(sp);
+    float core = exp(-d * d * 60000.0);
+    float spike = exp(-abs(sp.x) * 900.0) * exp(-abs(sp.y) * 90.0) + exp(-abs(sp.y) * 900.0) * exp(-abs(sp.x) * 160.0);
+    col += VEIL * (core * 1.6 + spike * 0.35);
   }
-  // 远星：固定不动的细点
-  vec2 g = floor(p * 90.0);
-  float s = step(0.985, h1(g)) * h2(g);
-  col += vec3(0.8, 0.85, 1.0) * s * 0.35 * step(length(fract(p * 90.0) - 0.5), 0.12);
-  col += srgb(vec3(0.95, 0.83, 0.55)) * exp(-pow((y - 0.05) * 3.0, 2.0)) * 0.12 * (1.0 - abs(p.x) * 0.8);
+  // 神国：上方极淡的光晕
+  col += GOLD * exp(-pow(length((p - vec2(0.0, -0.42)) * vec2(0.7, 1.8)), 2.0) * 4.0) * 0.16;
   return col;
 }
 
-// 物质世界：深绿土地上的等高线缓缓移动——万事在当下留下结果
+// ---------- 物质世界：土地与当下 ----------
+// 铜金墨线刻出的等高线地形图：深绿底、首曲线与计曲线、细密的阴影排线；整体缓缓平移。
+float terrain(vec2 p){ return fbm(p * 1.9 + vec2(uTime * 0.012, 0.0)) * 0.85 + fbm(p * 5.0) * 0.15; }
 vec3 matter(vec2 p){
-  float h = fbm(p * 2.2 + vec2(uTime * 0.02, 0.0));
-  vec3 col = mix(srgb(vec3(0.05, 0.12, 0.10)), srgb(vec3(0.16, 0.26, 0.18)), h);
-  float lines = abs(fract(h * 14.0) - 0.5);
-  col += srgb(vec3(0.78, 0.74, 0.55)) * (1.0 - smoothstep(0.0, 0.06, lines)) * 0.22;
+  float h = terrain(p);
+  vec3 col = mix(vec3(0.03, 0.08, 0.07), vec3(0.08, 0.16, 0.12), smoothstep(0.25, 0.75, h));
+  float v = h * 16.0;
+  float d = (fract(v) - 0.5) / 16.0;
+  float major = step(0.5, fract(floor(v) / 5.0 + 0.1));
+  col += GOLD * hair(d, 0.0006 + 0.0008 * major) * (0.35 + 0.35 * major);
+  // 阴影排线：只在坡的背光一侧
+  vec2 e = vec2(0.004, 0.0);
+  float slope = terrain(p + e.xy) - terrain(p - e.xy);
+  float hatch = hair(fract((p.x + p.y) * 140.0) - 0.5, 0.06);
+  col *= 1.0 - smoothstep(0.0, 0.02, slope) * hatch * 0.35;
   return col;
 }
-// 灵之世界：心灵、故事、梦境汇成的柔雾，域扭曲后缓缓流动，浮着细小的光点
+
+// ---------- 灵之世界：心灵、故事与梦境 ----------
+// 蓝紫色的水墨晕染，域扭曲后缓缓流动；若隐若现的细光丝穿行其中（故事与梦境的脉络）。
 vec3 spirit(vec2 p){
-  vec2 w = vec2(fbm(p * 1.4 + vec2(0.0, uTime * 0.06)), fbm(p * 1.4 + vec2(5.2, -uTime * 0.05)));
-  float f = fbm(p * 2.0 + w * 2.4);
-  vec3 col = mix(vec3(0.05, 0.06, 0.12), vec3(0.42, 0.52, 0.66), smoothstep(0.3, 0.78, f));
-  col = mix(col, vec3(0.58, 0.50, 0.70), smoothstep(0.55, 0.85, w.x) * 0.45);
-  // 发光的雾带：沿等值线的细亮边
-  col += vec3(0.78, 0.74, 0.96) * (1.0 - smoothstep(0.0, 0.025, abs(f - 0.56))) * 0.35;
-  col += vec3(0.62, 0.78, 0.86) * (1.0 - smoothstep(0.0, 0.02, abs(f - 0.44))) * 0.2;
-  vec2 g = floor(p * 26.0 + vec2(0.0, uTime * 0.6));
-  col += vec3(0.9, 0.92, 1.0) * step(0.97, h1(g)) * step(length(fract(p * 26.0 + vec2(0.0, uTime * 0.6)) - 0.5), 0.08) * 0.8;
+  vec2 w = vec2(fbm(p * 1.3 + vec2(0.0, uTime * 0.04)), fbm(p * 1.3 + vec2(5.2, -uTime * 0.035)));
+  float f = fbm(p * 1.7 + w * 2.6);
+  vec3 col = mix(vec3(0.05, 0.06, 0.11), vec3(0.30, 0.35, 0.50), smoothstep(0.3, 0.8, f));
+  col = mix(col, vec3(0.30, 0.25, 0.40), smoothstep(0.5, 0.85, w.x) * 0.5);
+  // 水墨边缘：晕染交界处略深
+  col *= 0.85 + 0.15 * smoothstep(0.0, 0.08, abs(f - 0.5));
+  // 细光丝
+  col += vec3(0.82, 0.80, 1.0) * hair(f - 0.58, 0.0025) * 0.6;
+  col += TEAL * hair(f - 0.42, 0.002) * 0.25;
   return col;
 }
-// 镜中世界：物质界的镜像被打碎成错位的晶片，颜色反转偏冷，边缘有色散
-vec3 mirror(vec2 p){
-  vec2 cellId = floor(p * vec2(5.0, 4.0) + vec2(0.0, uTime * 0.03));
-  vec2 shift = (vec2(h1(cellId), h2(cellId)) - 0.5) * 0.12;
-  vec2 m = vec2(-p.x, p.y) + shift;
-  vec3 a = matter(m + vec2(0.006, 0.0)), b = matter(m - vec2(0.006, 0.0));
-  vec3 col = vec3(a.r, b.g, (a.b + b.b) * 0.5);
-  col = vec3(0.07, 0.07, 0.10) + (vec3(0.3) - col) * vec3(0.5, 0.52, 0.66) * 0.75; // 反色、偏冷、压暗
-  vec2 f = fract(p * vec2(5.0, 4.0) + vec2(0.0, uTime * 0.03));
-  float edge = 1.0 - smoothstep(0.0, 0.03, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)));
-  col += vec3(0.7, 0.74, 0.86) * edge * 0.14;
-  return col;
-}
-// 亡者世界：暗紫灰的深处，灰烬缓缓下沉，最底部一片微弱的冷光
-vec3 dead(vec2 p, float y){
-  vec3 col = mix(srgb(vec3(0.07, 0.06, 0.09)), srgb(vec3(0.02, 0.02, 0.03)), smoothstep(4.0, 5.2, y));
-  for (int i = 0; i < 3; i++) {
-    float s = 18.0 + float(i) * 14.0;
-    vec2 q = p * s + vec2(0.0, uTime * (0.25 + float(i) * 0.12));
-    vec2 g = floor(q);
-    float on = step(0.93, h1(g + float(i) * 13.0));
-    col += srgb(vec3(0.62, 0.58, 0.66)) * on * step(length(fract(q) - 0.5), 0.07 + 0.03 * float(i)) * (0.35 - 0.08 * float(i));
+
+// ---------- 镜中世界：扭曲与替换 ----------
+// 物质界的等高线左右颠倒，被打碎成错位的镜片；反色偏冷；镜片之间是银色的细裂纹，边缘有一点色散。
+vec2 shards(vec2 p){
+  vec2 i = floor(p * 3.2), f = fract(p * 3.2);
+  float best = 9.0, second = 9.0; vec2 id = vec2(0.0);
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 o = vec2(h1(i + g), h2(i + g));
+    float d = length(g + o - f);
+    if (d < best) { second = best; best = d; id = i + g; } else if (d < second) second = d;
   }
-  col += srgb(vec3(0.45, 0.5, 0.62)) * exp(-pow((y - 5.0) * 2.4, 2.0)) * 0.15;
+  return vec2(second - best, h1(id));
+}
+vec3 mirror(vec2 p){
+  vec2 sh = shards(p + vec2(0.0, uTime * 0.01));
+  vec2 offset = (vec2(sh.y, fract(sh.y * 7.0)) - 0.5) * 0.08;
+  vec2 m = vec2(-p.x, p.y) + offset;
+  float hr = terrain(m + vec2(0.003, 0.0)), hb = terrain(m - vec2(0.003, 0.0));
+  float vr = (fract(hr * 16.0) - 0.5) / 16.0, vb = (fract(hb * 16.0) - 0.5) / 16.0;
+  vec3 col = mix(vec3(0.05, 0.05, 0.08), vec3(0.11, 0.11, 0.17), sh.y);
+  col += vec3(0.75, 0.62, 0.70) * hair(vr, 0.0009) * 0.4 + vec3(0.55, 0.70, 0.85) * hair(vb, 0.0009) * 0.4;
+  col += vec3(0.82, 0.85, 0.92) * hair(sh.x, 0.004) * 0.35;
   return col;
 }
-// 地层：一层层颜色不同的沉积带，边界被噪声扭成起伏的岩线
-vec3 strata(vec2 p, float y){
-  float b = y * 18.0 + fbm(vec2(p.x * 2.5, y * 3.0)) * 3.0;
-  float band = fract(b);
-  vec3 col = mix(srgb(vec3(0.16, 0.13, 0.10)), srgb(vec3(0.30, 0.25, 0.18)), h1(vec2(floor(b), 3.0)));
-  col *= 0.75 + 0.25 * fbm(p * vec2(18.0, 3.0));
-  col += srgb(vec3(0.83, 0.70, 0.43)) * (1.0 - smoothstep(0.0, 0.04, abs(band - 0.5) - 0.46)) * 0.12;
+
+// ---------- 亡者世界：死亡与归宿 ----------
+// 深梅黑；三层景深的灰烬缓缓下沉（远处小而慢、近处大而略快）；薄雾横移；地平线上一抹苍白的微光。
+vec3 dead(vec2 p, float y){
+  vec3 col = mix(vec3(0.045, 0.03, 0.045), vec3(0.015, 0.012, 0.02), smoothstep(4.0, 5.0, y));
+  col += vec3(0.08, 0.07, 0.10) * smoothstep(0.35, 0.8, fbm(vec2(p.x * 2.0 + uTime * 0.02, y * 3.0))) * 0.5;
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    float s = 34.0 - fi * 9.0;
+    vec2 q = vec2(p.x, y) * s + vec2(sin(y * 3.0 + fi) * 0.3, -uTime * (0.18 + fi * 0.1));
+    vec2 g = floor(q);
+    float on = step(0.92, h1(g + fi * 13.0));
+    float sz = 0.06 + fi * 0.03;
+    col += vec3(0.70, 0.66, 0.74) * on * smoothstep(sz, 0.0, length(fract(q) - 0.5)) * (0.25 + fi * 0.15);
+  }
+  col += vec3(0.62, 0.66, 0.78) * exp(-pow((y - 4.82) * 7.0, 2.0)) * 0.12 * (1.0 - abs(p.x) * 0.5);
   return col;
 }
+
+// ---------- 时间长河 ----------
+// 九股粗细明暗各不相同的细光丝（金到淡青）在画面中央交织，光点沿丝向下流；外面裹着一层缓缓流动的雾。
+// 坐标用画面坐标，所以它跟着读者，不跟着诸界柱。
+// shape：长河展开的程度（按画面中心所在的层统一决定，避免上宽下窄）；k：此处的亮度（按像素柔和过渡）。
+vec3 river(vec2 p, float sy, float shape, float k){
+  vec3 col = vec3(0.0);
+  float spread = mix(0.03, 0.2, shape);
+  for (int i = 0; i < 9; i++) {
+    float fi = float(i), ph = fi * 1.71;
+    float lane = fi / 8.0 - 0.5;
+    float strength = 0.35 + 0.65 * fract(sin(fi * 12.9898) * 43758.5453); // 每股粗细明暗各不相同
+    float x = lane * spread * 2.0 * (0.75 + 0.25 * sin(fi * 2.3))
+            + sin(sy * 2.1 - uTime * 0.18 + ph) * (0.012 + 0.045 * shape)
+            + sin(sy * 5.7 + uTime * 0.27 + ph * 2.0) * 0.006;
+    float d = p.x - x;
+    float w = (0.0008 + 0.0008 * shape) * (0.6 + 0.6 * strength);
+    float core = exp(-d * d / (w * w));
+    float glow = exp(-d * d / (w * w * 140.0));
+    float pulse = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(sy * 6.0 - uTime * 1.3 + ph * 3.0), 3.0); // 光沿丝向下走
+    vec3 tint = mix(VEIL, TEAL, fract(fi * 0.37) * 0.85);
+    col += tint * strength * (core * (0.5 + 0.9 * pulse) + glow * 0.13);
+  }
+  float body = exp(-p.x * p.x / (spread * spread * 2.6));
+  col += GOLD * body * (0.03 + 0.13 * shape) * (0.45 + 0.55 * fbm(vec2(p.x * 4.0, sy * 2.5 - uTime * 0.3)));
+  // 更宽的一层薄光，让展开时的长河撑得起整个画面
+  col += mix(GOLD, TEAL, 0.4) * exp(-p.x * p.x / (spread * spread * 9.0)) * 0.05 * shape * (0.6 + 0.4 * fbm(vec2(p.x * 1.5, sy * 1.2 - uTime * 0.15)));
+  // 漂流的细尘
+  vec2 mg = vec2(p.x * 70.0, sy * 30.0 - uTime * 1.8), gi = floor(mg);
+  col += VEIL * step(0.92, h1(gi)) * smoothstep(0.12, 0.0, length(fract(mg) - 0.5)) * body * (0.35 + 0.6 * shape);
+  return col * mix(0.1, 1.5, k);
+}
+
 
 void main(){
-  vec2 p = vec2((vUv.x - 0.5) * uAspect, vUv.y - 0.5);
-  float y = uDepth + (0.5 - vUv.y); // 柱上的纵坐标：向下为正
-  vec3 col;
-  // 各层之间用地层过渡；层内按坐标取对应的世界
-  float s1 = smoothstep(1.05, 1.2, y) * (1.0 - smoothstep(1.4, 1.55, y));
-  float s2 = smoothstep(3.6, 3.75, y) * (1.0 - smoothstep(3.95, 4.1, y));
-  vec3 upper = stars(p, y);
-  // 中层三界并立：三栏，聚焦的一栏完整，其余两栏压暗
-  float colW = uAspect / 3.0;
-  float xi = clamp(floor((p.x + uAspect * 0.5) / colW), 0.0, 2.0);
-  vec2 pc = vec2(p.x - (xi - 1.0) * colW, p.y + y * 0.6);
-  vec3 mid = xi < 0.5 ? matter(pc) : xi < 1.5 ? spirit(pc) : mirror(pc);
-  float focus = 1.0 - smoothstep(0.0, 0.9, abs(uFocus - xi));
-  mid *= 0.45 + 0.55 * focus;
-  float seam = abs(fract((p.x + uAspect * 0.5) / colW + 0.5) - 0.5) * colW;
-  mid += srgb(vec3(0.83, 0.70, 0.43)) * (1.0 - smoothstep(0.0, 0.004, seam)) * 0.35;
-  vec3 lower = dead(p, y);
-  col = y < 1.3 ? upper : y < 3.85 ? mid : lower;
-  col = mix(col, strata(p, y), max(s1, s2));
+  vec2 p = vec2((vUv.x - 0.5) * uAspect, 0.5 - vUv.y); // p.y 向下为正
+  float y = uDepth + p.y;                                // 诸界柱上的纵坐标
+  float sy = -vUv.y;                                      // 画面坐标：长河用它，所以跟着读者
 
-  // 时间长河：固定在画面一侧，始终向下流淌（只随真实时间流动，不随滚动方向倒流）。
-  // 细的河心 + 一层柔光；纹路顺着水流方向拉长；细小的光点向下漂。
-  float rx = uRiverX + sin(vUv.y * 5.0 + 1.3) * 0.03 + sin(vUv.y * 13.0) * 0.008;
-  float dx = (vUv.x - rx) * uAspect;
-  float core = exp(-dx * dx * 5200.0);
-  float glow = exp(-dx * dx * 260.0);
-  float f1 = noise(vec2(dx * 38.0, vUv.y * 5.0 + uTime * 0.85));
-  float f2 = noise(vec2(dx * 90.0 + 3.0, vUv.y * 12.0 + uTime * 1.5));
-  float flowL = smoothstep(0.45, 0.92, f1 * 0.6 + f2 * 0.4);
-  vec3 gold = vec3(0.95, 0.86, 0.6);
-  col += gold * (core * 0.75 + glow * (0.06 + 0.45 * flowL));
-  vec2 mg = vec2(dx * 70.0, vUv.y * 34.0 + uTime * 2.4);
-  vec2 gi = floor(mg);
-  col += vec3(1.0, 0.96, 0.84) * step(0.86, h1(gi)) * step(length(fract(mg) - 0.5), 0.14) * exp(-dx * dx * 700.0) * 0.9;
+  // 各世界在柱上的位置与柔和的边界
+  float wS = 1.0 - smoothstep(0.8, 1.15, y);
+  float wM = smoothstep(1.85, 2.2, y) * (1.0 - smoothstep(2.8, 3.15, y));
+  float wD = smoothstep(3.85, 4.2, y) * (1.0 - smoothstep(4.8, 5.15, y));
+  float world = clamp(wS + wM + wD, 0.0, 1.0);
 
+  vec3 col = vec3(0.006, 0.01, 0.014);
+  if (wS > 0.0) col = mix(col, stars(p, y), wS);
+  if (wM > 0.0) {
+    // 中层三界并立：三栏柔和过渡，聚焦的一栏完整，另两栏退暗
+    float colW = uAspect / 3.0;
+    float u = (p.x + uAspect * 0.5) / colW;      // 0–3
+    vec2 pm = vec2(p.x, p.y + y * 0.5);
+    vec3 a = matter(pm), b = spirit(pm), c = mirror(pm);
+    float ta = 1.0 - smoothstep(0.92, 1.08, u), tc = smoothstep(1.92, 2.08, u);
+    vec3 mid = a * ta + b * (1.0 - ta - tc) + c * tc;
+    float idx = clamp(u - 0.5, 0.0, 2.0);
+    mid *= 0.42 + 0.58 * (1.0 - smoothstep(0.35, 1.0, abs(uFocus - idx)));
+    // 栏与栏之间一道极细的金线，上下渐隐
+    float seam = min(abs(u - 1.0), abs(u - 2.0)) * colW;
+    mid += GOLD * hair(seam, 0.0008) * 0.35 * (1.0 - abs(p.y) * 1.6);
+    col = mix(col, mid, wM);
+  }
+  if (wD > 0.0) col = mix(col, dead(p, y), wD);
+
+  // 长河：世界之中隐入深处（只用加光，淡得几乎只是底光）；衔接段与最后展开成画面的主体
+  // 画面中心所在的层决定长河展开的程度
+  float yc = uDepth;
+  float worldC = clamp((1.0 - smoothstep(0.8, 1.15, yc)) + smoothstep(1.85, 2.2, yc) * (1.0 - smoothstep(2.8, 3.15, yc)) + smoothstep(3.85, 4.2, yc) * (1.0 - smoothstep(4.8, 5.15, yc)), 0.0, 1.0);
+  float k = 1.0 - world;
+  col += river(p, sy, 1.0 - worldC, k) * (1.0 - 0.7 * world);
+
+  // 暗角
+  col *= 1.0 - 0.35 * smoothstep(0.4, 1.0, length(vec2(p.x / uAspect, p.y) * 1.6));
   gl_FragColor = vec4(col * uFade, 1.0);
 }`;

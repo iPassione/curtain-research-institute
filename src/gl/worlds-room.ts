@@ -10,10 +10,12 @@ import { createWorldsScene } from './scenes/worlds';
 
 export interface WorldEntry { id: string; name: string; position: string; title: string; text: string; authority: string }
 
-/** 滚动进度 → 柱上深度（屏）的关键帧：每一层停留一段，层与层之间穿过地层。 */
-const DEPTH_KEYS: [number, number][] = [[0, 0.1], [0.14, 0.45], [0.22, 1.32], [0.3, 2.0], [0.62, 3.0], [0.7, 3.88], [0.8, 4.55], [1, 4.75]];
-/** 中层三界依次聚焦的进度区间。 */
-const FOCUS_KEYS: [number, number][] = [[0.3, 0], [0.4, 0], [0.44, 1], [0.52, 1], [0.56, 2], [0.62, 2]];
+/** 滚动进度 → 诸界柱上深度（屏，画面中心所在位置）的关键帧。
+ *  柱上：0–1 星之世界 · 1–2 长河衔接 · 2–3 中层三界 · 3–4 长河衔接 · 4–5 亡者世界 · 5–6 长河揭晓。
+ *  每个世界与每段长河都停留一段，再滑向下一段。 */
+const DEPTH_KEYS: [number, number][] = [[0, 0.5], [0.1, 0.5], [0.17, 1.5], [0.24, 1.5], [0.31, 2.5], [0.6, 2.5], [0.67, 3.5], [0.74, 3.5], [0.81, 4.5], [0.88, 4.5], [0.95, 5.5], [1, 5.5]];
+/** 中层三界依次聚焦（0 物质 · 1 灵 · 2 镜）。 */
+const FOCUS_KEYS: [number, number][] = [[0.31, 0], [0.39, 0], [0.43, 1], [0.49, 1], [0.53, 2], [0.6, 2]];
 const lerpKeys = (keys: [number, number][], p: number) => {
   if (p <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
@@ -22,8 +24,9 @@ const lerpKeys = (keys: [number, number][], p: number) => {
   }
   return keys[keys.length - 1][1];
 };
-/** 各世界说明出现的进度区间：[开始, 结束]。 */
-const CARDS: [string, number, number][] = [['stars', 0.02, 0.14], ['matter', 0.3, 0.4], ['spirit', 0.42, 0.52], ['mirror', 0.54, 0.62], ['dead', 0.72, 0.84], ['time', 0.88, 0.98]];
+/** 各世界说明出现的进度区间：[开始, 结束]。长河衔接段不出现任何文字；
+ *  「时间长河」直到亡者世界之后才揭晓（读者此时才意识到，自己一直随着它漂流）。 */
+const CARDS: [string, number, number][] = [['stars', 0.01, 0.12], ['matter', 0.31, 0.4], ['spirit', 0.42, 0.5], ['mirror', 0.52, 0.61], ['dead', 0.8, 0.89], ['time', 0.95, 2]];
 
 export function mountWorldsDive(ctx: RouteContext, hero: HTMLElement, worlds: WorldEntry[]) {
   const stage = getStage();
@@ -66,7 +69,7 @@ export function mountWorldsDive(ctx: RouteContext, hero: HTMLElement, worlds: Wo
     for (const [id, a, b] of CARDS) {
       const card = `.worlds-card[data-card="${id}"]`;
       tl.fromTo(card, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.025, ease: 'power2.out' }, a);
-      tl.to(card, { opacity: 0, y: -30, duration: 0.02, ease: 'power1.in' }, b - 0.02);
+      if (b <= 1) tl.to(card, { opacity: 0, y: -30, duration: 0.02, ease: 'power1.in' }, b - 0.02); // 揭晓后的「时间长河」留在画面上
     }
     tl.set({}, {}, 1);
     const p = tl.scrollTrigger?.progress ?? 0;
