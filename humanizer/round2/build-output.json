@@ -1,0 +1,437 @@
+{
+  "articles": 53,
+  "originalCharacters": 125825,
+  "revisedCharacters": 99885,
+  "shortenedOver10Percent": [
+    {
+      "id": "origin",
+      "title": "帷幕的形成",
+      "originalTitle": "帷幕诞生之前",
+      "originalLength": 1973,
+      "revisedLength": 1466,
+      "ratio": 0.743,
+      "originalParagraphs": 16,
+      "revisedParagraphs": 16
+    },
+    {
+      "id": "continents",
+      "title": "五大陆与四海",
+      "originalTitle": "穹顶之下的土地",
+      "originalLength": 2829,
+      "revisedLength": 2520,
+      "ratio": 0.891,
+      "originalParagraphs": 28,
+      "revisedParagraphs": 28
+    },
+    {
+      "id": "stone",
+      "title": "蕴法石",
+      "originalTitle": "蕴法石的旅程",
+      "originalLength": 1967,
+      "revisedLength": 1749,
+      "ratio": 0.889,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "esperanza",
+      "title": "埃斯佩兰萨",
+      "originalTitle": "埃斯佩兰萨：港口与矿脉",
+      "originalLength": 1964,
+      "revisedLength": 1763,
+      "ratio": 0.898,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "enchantevis",
+      "title": "昂尚特维斯",
+      "originalTitle": "昂尚特维斯：森林与文字",
+      "originalLength": 1968,
+      "revisedLength": 1718,
+      "ratio": 0.873,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "wands",
+      "title": "魔杖",
+      "originalTitle": "从长杖到短杖",
+      "originalLength": 2082,
+      "revisedLength": 1716,
+      "ratio": 0.824,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "alchemy",
+      "title": "炼金术",
+      "originalTitle": "炼金术的两条道路",
+      "originalLength": 2029,
+      "revisedLength": 1750,
+      "ratio": 0.862,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "tyndale-early",
+      "title": "庭代尔·克罗蒂的少年时期",
+      "originalTitle": "庭代尔·克罗蒂：少年时期",
+      "originalLength": 1982,
+      "revisedLength": 1550,
+      "ratio": 0.782,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 18
+    },
+    {
+      "id": "chronicles",
+      "title": "帷幕的年代与史料",
+      "originalTitle": "年代之后：怎样读帷幕历史",
+      "originalLength": 2081,
+      "revisedLength": 1354,
+      "ratio": 0.651,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 17
+    },
+    {
+      "id": "casting-reference",
+      "title": "施法原理",
+      "originalTitle": "施法原理详论",
+      "originalLength": 1971,
+      "revisedLength": 1647,
+      "ratio": 0.836,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "artefacts-study",
+      "title": "造物",
+      "originalTitle": "造物：被保存的魔力",
+      "originalLength": 1961,
+      "revisedLength": 1451,
+      "ratio": 0.74,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "ministry-government",
+      "title": "魔法联合部",
+      "originalTitle": "魔法联合部如何治理",
+      "originalLength": 2204,
+      "revisedLength": 1980,
+      "ratio": 0.898,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 18
+    },
+    {
+      "id": "inhabitants-history",
+      "title": "原住民与巫师迁徙",
+      "originalTitle": "帷幕中的原住民与迁徙者",
+      "originalLength": 1965,
+      "revisedLength": 1729,
+      "ratio": 0.88,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "wizard-ranks-study",
+      "title": "巫师等级",
+      "originalTitle": "巫师的七个阶段",
+      "originalLength": 2035,
+      "revisedLength": 1490,
+      "ratio": 0.732,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "authority-research",
+      "title": "权柄与神格",
+      "originalTitle": "权柄与神格",
+      "originalLength": 2738,
+      "revisedLength": 1918,
+      "ratio": 0.701,
+      "originalParagraphs": 24,
+      "revisedParagraphs": 24
+    },
+    {
+      "id": "divination-methods",
+      "title": "占卜方法",
+      "originalTitle": "占卜的七种门径",
+      "originalLength": 2010,
+      "revisedLength": 1607,
+      "ratio": 0.8,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "guardian-spirits-study",
+      "title": "守护灵",
+      "originalTitle": "守护灵与契约",
+      "originalLength": 1952,
+      "revisedLength": 1469,
+      "ratio": 0.753,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "magic-disciplines-index",
+      "title": "高级魔法体系",
+      "originalTitle": "高级魔法的三十八种体系",
+      "originalLength": 2020,
+      "revisedLength": 1570,
+      "ratio": 0.777,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "old-and-modern-spells",
+      "title": "古代魔法与现代咒语",
+      "originalTitle": "古代魔法与现代咒语",
+      "originalLength": 1942,
+      "revisedLength": 1548,
+      "ratio": 0.797,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "soul-and-death-study",
+      "title": "灵魂与死亡",
+      "originalTitle": "灵魂、心灵与亡者",
+      "originalLength": 1961,
+      "revisedLength": 1385,
+      "ratio": 0.706,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "crotty-family-study",
+      "title": "克罗蒂家族",
+      "originalTitle": "克罗蒂：一个姓氏的重量",
+      "originalLength": 1999,
+      "revisedLength": 1486,
+      "ratio": 0.743,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 17
+    },
+    {
+      "id": "tiarnas-early-study",
+      "title": "提亚纳斯·克罗蒂",
+      "originalTitle": "提亚纳斯·克罗蒂",
+      "originalLength": 1979,
+      "revisedLength": 1469,
+      "ratio": 0.742,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 18
+    },
+    {
+      "id": "sinclair-study",
+      "title": "辛克莱尔·德维雷斯",
+      "originalTitle": "辛克莱尔·德维雷斯",
+      "originalLength": 1956,
+      "revisedLength": 1114,
+      "ratio": 0.57,
+      "originalParagraphs": 18,
+      "revisedParagraphs": 15
+    },
+    {
+      "id": "knights-community",
+      "title": "诺伐圣廷骑士团",
+      "originalTitle": "诺伐圣廷骑士团",
+      "originalLength": 2086,
+      "revisedLength": 1706,
+      "ratio": 0.818,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 21
+    },
+    {
+      "id": "ernicium-profile",
+      "title": "厄尼西姆",
+      "originalTitle": "厄尼西姆",
+      "originalLength": 2003,
+      "revisedLength": 1246,
+      "ratio": 0.622,
+      "originalParagraphs": 17,
+      "revisedParagraphs": 16
+    },
+    {
+      "id": "galibel-profile",
+      "title": "加利贝尔",
+      "originalTitle": "加利贝尔",
+      "originalLength": 2024,
+      "revisedLength": 1358,
+      "ratio": 0.671,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 18
+    },
+    {
+      "id": "huffines-profile",
+      "title": "赫法恩斯",
+      "originalTitle": "赫法恩斯",
+      "originalLength": 2075,
+      "revisedLength": 1454,
+      "ratio": 0.701,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 18
+    },
+    {
+      "id": "pridony-profile",
+      "title": "普里多尼",
+      "originalTitle": "普里多尼",
+      "originalLength": 2122,
+      "revisedLength": 1500,
+      "ratio": 0.707,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 19
+    },
+    {
+      "id": "cyprus-profile",
+      "title": "塞浦路斯",
+      "originalTitle": "塞浦路斯",
+      "originalLength": 1962,
+      "revisedLength": 1349,
+      "ratio": 0.688,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 16
+    },
+    {
+      "id": "chessia-profile",
+      "title": "切西娅",
+      "originalTitle": "切西娅",
+      "originalLength": 2003,
+      "revisedLength": 1370,
+      "ratio": 0.684,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 17
+    },
+    {
+      "id": "divination-study",
+      "title": "占卜与灵界",
+      "originalTitle": "占卜与灵界的记录",
+      "originalLength": 2734,
+      "revisedLength": 1808,
+      "ratio": 0.661,
+      "originalParagraphs": 24,
+      "revisedParagraphs": 24
+    },
+    {
+      "id": "worlds-structure",
+      "title": "六大世界",
+      "originalTitle": "现实的层次：六大世界",
+      "originalLength": 2150,
+      "revisedLength": 1539,
+      "ratio": 0.716,
+      "originalParagraphs": 15,
+      "revisedParagraphs": 16
+    },
+    {
+      "id": "worlds-boundaries",
+      "title": "灵之世界",
+      "originalTitle": "诸界之间：信息、灵魂与边界",
+      "originalLength": 2112,
+      "revisedLength": 1553,
+      "ratio": 0.735,
+      "originalParagraphs": 15,
+      "revisedParagraphs": 15
+    },
+    {
+      "id": "daily-tools",
+      "title": "造物与日常工具",
+      "originalTitle": "一件造物如何进入日常",
+      "originalLength": 2123,
+      "revisedLength": 1451,
+      "ratio": 0.683,
+      "originalParagraphs": 15,
+      "revisedParagraphs": 15
+    },
+    {
+      "id": "daily-messages",
+      "title": "灵界传信与远方的消息",
+      "originalTitle": "远处的消息如何抵达",
+      "originalLength": 2140,
+      "revisedLength": 1245,
+      "ratio": 0.582,
+      "originalParagraphs": 15,
+      "revisedParagraphs": 15
+    },
+    {
+      "id": "worlds-stars",
+      "title": "星之世界",
+      "originalTitle": "穹顶之外：星辰与命运的尺度",
+      "originalLength": 2719,
+      "revisedLength": 1618,
+      "ratio": 0.595,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 19
+    },
+    {
+      "id": "worlds-mirror",
+      "title": "镜中世界",
+      "originalTitle": "镜面之后：窥视、伪装与替换",
+      "originalLength": 2668,
+      "revisedLength": 1540,
+      "ratio": 0.577,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 17
+    },
+    {
+      "id": "worlds-time",
+      "title": "时间长河",
+      "originalTitle": "此刻之前与之后：时间长河的边界",
+      "originalLength": 2716,
+      "revisedLength": 1621,
+      "ratio": 0.597,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 17
+    },
+    {
+      "id": "worlds-dead",
+      "title": "亡者世界",
+      "originalTitle": "寂静的彼岸：亡者、回声与告别",
+      "originalLength": 2713,
+      "revisedLength": 1554,
+      "ratio": 0.573,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "daily-market",
+      "title": "街市里的货币与买卖",
+      "originalTitle": "柜台前的一天：零钱、赊账与买卖",
+      "originalLength": 2725,
+      "revisedLength": 2301,
+      "ratio": 0.844,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "daily-table",
+      "title": "巫师家庭的饭桌",
+      "originalTitle": "一顿晚饭的来处：厨房、工时与家人",
+      "originalLength": 2678,
+      "revisedLength": 2356,
+      "ratio": 0.88,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "daily-journey",
+      "title": "普通居民的远行",
+      "originalTitle": "第一次远行：行装、候门与归期",
+      "originalLength": 2718,
+      "revisedLength": 2244,
+      "ratio": 0.826,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    },
+    {
+      "id": "daily-apprentice",
+      "title": "巫师学徒的练习",
+      "originalTitle": "学徒的一日：咒文、练习与收工",
+      "originalLength": 2729,
+      "revisedLength": 2363,
+      "ratio": 0.866,
+      "originalParagraphs": 20,
+      "revisedParagraphs": 20
+    }
+  ]
+}
