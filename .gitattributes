@@ -2,3 +2,9 @@
 # 避免 Windows 上 autocrlf 让每次改稿都出现只有换行符差异的文件。
 * text=auto eol=lf
 *.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.woff2 binary

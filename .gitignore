@@ -1,11 +1,27 @@
-# Local tooling and preview state
+# Dependencies and local development environments
 node_modules/
 .venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+
+# OS/editor state and temporary files
 .DS_Store
 Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*~
+.cache/
+coverage/
+playwright-report/
+test-results/
+.codex-tmp*/
 
 # Credentials and local configuration
 .env
@@ -13,22 +29,31 @@ Thumbs.db
 !.env.example
 *.pem
 *.key
+*.p12
+*.pfx
+.openai/*
+!.openai/hosting.json
 
-# Locally packaged deployments
+# Local export bundles
+/exports/
 *.tar.gz
 *.tgz
+*.zip
+*.7z
 
-# Playwright output
-test-results/
-playwright-report/
+# Playwright 基线、截图与比对输出
 .baseline-server/
 tests/visual/baseline-shots/
 tests/visual/current/
 tests/visual/diff/
-public/data/
-public/assets/
 tests/visual/journey/
 tests/visual/chart/
 tests/visual/casting/
 tests/visual/review/
 tests/visual/worlds/
+
+# 构建中间产物（由 scripts/build-content.mjs、build-images.mjs 生成）
+public/data/
+public/assets/
+
+# dist/ 要提交：它是 Sites 发布读取的目录。V3 起它由 npm run build 生成，不要手工修改，改源码后重新构建。

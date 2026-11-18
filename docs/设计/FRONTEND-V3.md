@@ -3,6 +3,7 @@
 > 写给施工者（Opus 5.5）。目标仓库是 `Y:\Obsidian\帷幕\curtain-research-institute`（独立 Git 仓库，远端 `iPassione/curtain-research-institute`），不是 Obsidian 知识库本身。
 > 起点分支：`edit/dome-night-20261110`（提交 `359d11a`，「穹顶之下」夜色外壳，尚未推送、未并入 `main`）。
 > 开工前必读：仓库内 `PRODUCT.md`、`DESIGN.md`、`FIELDROOMS.md`、`COLLECTIONS.md`、`README.md`。本方案与它们冲突时，以 `PRODUCT.md` 的约束为准，视觉规则以本方案为准并在完工时回写 `DESIGN.md`。
+> （2026-11-18 起，这些文档已移入 `docs/`：`docs/设计/PRODUCT.md`、`docs/设计/DESIGN.md`、`docs/专题/FIELDROOMS.md`、`docs/专题/COLLECTIONS.md`；本方案位于 `docs/设计/FRONTEND-V3.md`。）
 
 ---
 
