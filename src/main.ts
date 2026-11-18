@@ -16,10 +16,10 @@ document.addEventListener('click', e => { if (!(e.target as Element).closest('.h
 const openSearch = () => import('./features/search').then(m => m.openSearch());
 // 面板代码很小（约 2 KB 压缩后），空闲时预取，按下快捷键后立刻就能输入；检索索引仍等到第一次打开才取。
 const idle = (window as any).requestIdleCallback || ((fn: () => void) => setTimeout(fn, 1500));
-idle(() => { import('./features/search'); });
+idle(() => { import('./features/search').catch(() => { /* 预取被打断（如离开页面）时忽略，用到时再载入 */ }); });
 const trigger = document.querySelector('.search-trigger') as HTMLButtonElement | null;
 if (trigger) {
-  if (/Mac|iPhone|iPad/.test(navigator.platform)) trigger.querySelector('kbd')!.textContent = '⌘ K';
+  if (/Mac|iPhone|iPad/.test(navigator.platform)) trigger.querySelector('kbd')!.dataset.key = '⌘ K';
   trigger.addEventListener('click', () => { close(); openSearch(); });
 }
 document.addEventListener('keydown', e => {
@@ -28,4 +28,10 @@ document.addEventListener('keydown', e => {
   else if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); openSearch(); }
 });
 
-startRouter(main, prepare, () => close());
+// 首次载入失败：离开页面时中止的请求不算；真的取不到数据（离线、文件缺失）时在正文区说明。
+let leaving = false;
+addEventListener('pagehide', () => { leaving = true; });
+startRouter(main, prepare, () => close()).catch(() => {
+  if (leaving) return;
+  main.innerHTML = '<section class="page-content"><div class="page-inner"><p>页面没能载入，请检查网络后刷新重试。</p></div></section>';
+});

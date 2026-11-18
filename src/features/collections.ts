@@ -29,7 +29,7 @@ export function mountCollections(ctx, data, page) {
     render('matter');
     // 层积的六界：支持 WebGL2、有显卡加速、未要求减弱动态时，在页头与正文之间插入纵向下潜（按需载入）。
     const hero = ctx.main.querySelector('.page-hero');
-    if (hero && glCapable()) import('../gl/worlds-room').then(m => { if (!ctx.signal.aborted) m.mountWorldsDive(ctx, hero, worlds); });
+    if (hero && glCapable()) import('../gl/worlds-room').then(m => { if (!ctx.signal.aborted) m.mountWorldsDive(ctx, hero, worlds); }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
   } else {
     const topics = [
       {id:'money',name:'货币与交易',heading:'一枚索比恩，可以买什么？',text:'索比恩用于日常消费，加令承担大额交易。一个生鸡蛋约需一索比恩；这套通用货币由魔法联合部发行，以其权威和力量维系信用。',links:['daily-market','daily-table']},

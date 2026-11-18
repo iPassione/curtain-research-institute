@@ -17,13 +17,13 @@ function build() {
   const d = document.createElement('dialog');
   d.className = 'search-dialog';
   d.setAttribute('aria-label', '检索全站馆藏');
-  d.innerHTML = `<div class="search-panel"><div class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input type="search" role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list" placeholder="检索文章、章节、地名与器物…" autocomplete="off" spellcheck="false"><button type="button" class="search-close" aria-label="关闭检索">Esc</button></div><p class="search-status" aria-live="polite"></p><ul id="search-results" class="search-results" role="listbox" aria-label="检索结果"></ul><p class="search-hint"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></p></div>`;
+  d.innerHTML = `<div class="search-panel"><div class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input type="search" role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list" placeholder="检索文章、章节、地名与器物…" autocomplete="off" spellcheck="false"><button type="button" class="search-close" aria-label="Esc 关闭检索">Esc</button></div><p class="search-status" aria-live="polite"></p><ul id="search-results" class="search-results" role="listbox" aria-label="检索结果"></ul><p class="search-hint"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></p></div>`;
   document.body.append(d);
   const input = d.querySelector('input')!, list = d.querySelector('ul')!, status = d.querySelector('.search-status')!;
   let active = -1;
 
   const setActive = (i: number) => {
-    const items = [...list.children] as HTMLElement[];
+    const items = [...list.querySelectorAll<HTMLElement>('[role=option]')]; // 选项是每一项里的链接
     if (!items.length) { active = -1; input.removeAttribute('aria-activedescendant'); return; }
     active = (i + items.length) % items.length;
     items.forEach((el, n) => el.setAttribute('aria-selected', String(n === active)));
@@ -36,7 +36,7 @@ function build() {
     if (!index) { status.textContent = '正在载入索引…'; return; }
     if (!q) { list.innerHTML = ''; status.textContent = `共 ${index.filter(d => d.type === 'article').length} 篇文章、${index.filter(d => d.type === 'chapter').length} 个章节可供检索。`; input.setAttribute('aria-expanded', 'false'); setActive(-1); return; }
     const results = search(index, q);
-    list.innerHTML = results.map((r, i) => `<li id="search-result-${i}" role="option" aria-selected="false"><a href="${esc(r.doc.url)}" tabindex="-1"><span class="search-type">${LABEL[r.doc.type]}</span><span class="search-title">${mark(r.doc.title, r.terms)}</span><span class="search-meta">${esc(r.doc.meta)}</span>${r.snippet ? `<span class="search-snippet">${r.snippet}</span>` : ''}</a></li>`).join('');
+    list.innerHTML = results.map((r, i) => `<li role="presentation"><a id="search-result-${i}" role="option" aria-selected="false" href="${esc(r.doc.url)}" tabindex="-1"><span class="search-type">${LABEL[r.doc.type]}</span><span class="search-title">${mark(r.doc.title, r.terms)}</span><span class="search-meta">${esc(r.doc.meta)}</span>${r.snippet ? `<span class="search-snippet">${r.snippet}</span>` : ''}</a></li>`).join('');
     status.textContent = results.length ? `找到 ${results.length >= MAX ? MAX + ' 条以上' : results.length + ' 条'}结果` : '没有找到相关馆藏，换个词试试。';
     input.setAttribute('aria-expanded', String(results.length > 0));
     setActive(results.length ? 0 : -1);
@@ -48,7 +48,7 @@ function build() {
     if (e.key === 'Escape') { e.preventDefault(); close(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
-    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); (list.children[active]?.querySelector('a') as HTMLAnchorElement | null)?.click(); }
+    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); (list.querySelectorAll<HTMLAnchorElement>('[role=option]')[active])?.click(); }
   });
   list.addEventListener('pointermove', e => {
     const li = (e.target as Element).closest('li');

@@ -102,5 +102,5 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
       hot: () => hotIndex,
       pitch: () => pitchOffset,
     });
-  });
+  }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
 }

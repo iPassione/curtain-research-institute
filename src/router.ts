@@ -17,6 +17,7 @@ export type Prepare = (url: URL) => Promise<(ctx: RouteContext) => void>;
 
 const SCROLL_KEY = 'curtain-scroll';
 let navId = 0;
+let pending = false; // 有一次切换已开始、尚未画到页面上
 let renderedSearch: string | null = null;
 let teardown: (() => void) | null = null;
 let currentKey = '';
@@ -90,6 +91,7 @@ export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (ur
 
   async function go(url: URL, mode: 'initial' | 'push' | 'replace' | 'pop') {
     const id = ++navId;
+    pending = true;
     if (mode !== 'initial') saveScroll();
     if (mode === 'push' || mode === 'replace') {
       currentKey = newKey();
@@ -107,6 +109,7 @@ export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (ur
       throw error;
     }
     if (id !== navId) return;
+    pending = false;
     const commit = () => {
       teardown?.();
       const controller = new AbortController();
@@ -147,7 +150,11 @@ export function startRouter(main: HTMLElement, prepare: Prepare, onNavigate: (ur
 
   addEventListener('popstate', () => {
     const url = new URL(location.href);
-    if (url.search === renderedSearch) return; // 仅锚点变化
+    if (url.search === renderedSearch) {
+      // 仅锚点变化；或在上一次切换画到页面之前就按了返回——此时页面仍是这一页，取消那次切换，并把导航高亮等还原到这一页。
+      if (pending) { navId++; pending = false; currentKey = history.state?.key || currentKey; previousSearch = url.search; onNavigate(url); }
+      return;
+    }
     go(url, 'pop');
   });
   addEventListener('pagehide', saveScroll);

@@ -35,7 +35,7 @@ export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
     document.addEventListener('visibilitychange', () => { if (document.hidden) { if (timer) clearInterval(timer); timer = null; replay.textContent = '演示一次 ↻'; } }, { signal });
     ctx.onCleanup(() => { if (timer) clearInterval(timer); gsap.killTweensOf(panel.querySelector('.cast-particle')); });
     // 施法台：支持 WebGL2 与浮点纹理计算、未要求减弱动态时，在图解上叠加可亲手施法的粒子装置（按需载入）。
-    if (glCapable()) import('../gl/casting-room').then(m => { if (!signal.aborted) m.mountCastingRoom(ctx, panel); });
+    if (glCapable()) import('../gl/casting-room').then(m => { if (!signal.aborted) m.mountCastingRoom(ctx, panel); }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
   }
   if (page === 'people') {
     const people: [string, string, string, number, number][] = [['庭代尔', '导师与领导者', 'tyndale-early', 50, 46], ['厄尼西姆', '首席 · 赛特斯族', 'ernicium-profile', 20, 20], ['加利贝尔', '次席 · 翼人族', 'galibel-profile', 50, 14], ['普里多尼', '第三席 · 质人族', 'pridony-profile', 80, 20], ['赫法恩斯', '第四席 · 半羊人族', 'huffines-profile', 20, 78], ['塞浦路斯', '第五席 · 星中人混血', 'cyprus-profile', 50, 85], ['切西娅', '第六席 · 月人族', 'chessia-profile', 80, 78]];
@@ -43,7 +43,7 @@ export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
     const render = (i: number) => { const p = people[i]; panel.querySelectorAll('[data-person]').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j))); panel.querySelectorAll<HTMLElement>('[data-relation]').forEach(n => n.classList.toggle('active', +n.dataset.relation! === i || i === 0)); const a = data.articles.find(a => a.id === p[2]); panel.querySelector('.atlas-note')!.innerHTML = `<span class="atlas-index">${p[1]}</span><h3>${p[0]}</h3><p>${escape(a?.lead || '在共同生活与不同经历之间，理解一位历史人物。')}</p><p class="relation-label">${i === 0 ? '庭代尔挑选并教导成员，既是领导者，也是共同生活中的导师。' : '与庭代尔：导师与追随者。成员来自不同背景，席次之外也有各自的经历。'}</p>${link(p[2], '打开人物档案')}`; };
     panel.querySelectorAll<HTMLElement>('[data-person]').forEach(b => b.addEventListener('click', () => render(+b.dataset.person!), { signal })); render(0);
     // 星座图：未要求减弱动态时，在关系图上叠一层 2D 画布（不需要 WebGL，按需载入）。
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) import('./constellation').then(m => { if (!signal.aborted) m.mountConstellation(ctx, panel); });
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) import('./constellation').then(m => { if (!signal.aborted) m.mountConstellation(ctx, panel); }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
   }
   const curator = root.querySelector('.curator-feature'); if (curator) curator.after(panel); else root.prepend(panel);
 }

@@ -2,5 +2,7 @@
 @layer base {
 /* <picture> 只是 AVIF/WebP 的格式选择包装，不生成盒子，<img> 的布局与改造前相同。 */
 picture{display:contents}
+/* 脚本把页面画出来之前，正文区只有无脚本提示：先占满一屏，免得页脚先出现在首屏、随后被推下去（累计布局偏移）。 */
+#main:has(> noscript:only-child){min-height:100vh}
 picture>source{display:none}
 }

@@ -131,6 +131,7 @@
 }
 .search-trigger:hover { color: var(--veil, #f1e2b4); border-color: var(--gold, #d4b36e); background: #d4b36e14; }
 .search-trigger svg, .search-field svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.search-trigger kbd::after { content: attr(data-key); } /* 快捷键只做视觉提示，不进入按钮的可读名称 */
 .search-trigger kbd { font: 10px/1 var(--ui); color: var(--gold-dim, #a98b55); border: 1px solid #d4b36e33; padding: 3px 5px; }
 @media (max-width: 1150px) { .search-trigger kbd { display: none; } }
 @media (max-width: 850px) {
@@ -177,8 +178,8 @@
   text-decoration: none;
   border-left: 2px solid transparent;
 }
-.search-results [aria-selected=true] a { background: #e9e3d0; border-left-color: var(--brass); }
-.search-type { grid-row: span 3; font: 11px/1.9 var(--ui); color: #7e6842; letter-spacing: .06em; }
+.search-results a[aria-selected=true] { background: #e9e3d0; border-left-color: var(--brass); }
+.search-type { grid-row: span 3; font: 11px/1.9 var(--ui); color: #74603c; letter-spacing: .06em; }
 .search-title { font: 500 16px/1.6 var(--display); }
 .search-meta { font: 11px/1.6 var(--ui); color: var(--muted); }
 .search-snippet { font: 13px/1.85 var(--display); color: #3f544b; margin-top: 2px; text-autospace: normal; }

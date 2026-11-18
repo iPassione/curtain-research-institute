@@ -22,7 +22,7 @@ export function animateHome(ctx: RouteContext) {
   if (reducedMotion()) return;
   gsap.registerPlugin(ScrollTrigger);
   // 「穿过帷幕」：支持 WebGL2 且未要求减弱动态时，首页主视觉换成滚动驱动的四幕场景（three.js 只在这里按需载入）。
-  if (ctx.main.querySelector('[data-journey]')) import('../gl/journey').then(m => { if (!ctx.signal.aborted) m.mountJourney(ctx); });
+  if (ctx.main.querySelector('[data-journey]')) import('../gl/journey').then(m => { if (!ctx.signal.aborted) m.mountJourney(ctx); }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
   const g = gsap.context(() => {
     gsap.from('.hero-copy > *', { y: 18, duration: 1.2, stagger: .1, ease: 'expo.out' });
     if (!ctx.main.querySelector('[data-journey]')) gsap.to('.hero-image', { yPercent: 12, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });

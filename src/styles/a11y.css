@@ -1,0 +1,20 @@
+@layer v3 {
+/* 阶段 8：对比度修正。原有配色里少数说明文字略低于 WCAG AA 的 4.5:1，各自压暗到刚好达标，观感不变。
+   文章章节前的大号序号是装饰（aria-hidden），不在此列。 */
+.curator-label{color:#84683b}
+.atlas-eyebrow,.atlas-heading>p{color:#62705b}
+body:not([data-surface=home]) .section-heading>div>p{color:#6a6e59}
+.specimen-facts dt{color:#656f5c}
+.specimen-caption{color:#646f5f}
+.travel-climate{color:#647059}
+.street-sources{color:#626f5b}
+.travel-form .field-label{color:#5f6a57}
+.street-map-footer small{color:#666954}
+.street-times button{color:#65705d}
+.article-end>p{color:#7b6a45}
+.field-editor-note{color:#656f5d}
+.packing-progress{color:#636f5a}
+.street-directory button:not([aria-pressed=true]) span{color:#7d643b}
+.reading-aside nav a>span{color:#686e5b}
+.phase-controls small{color:#616448}
+}

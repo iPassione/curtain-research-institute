@@ -14,7 +14,7 @@ export function renderCollection(ctx: RouteContext, data: Manifest, section: Sec
 
   // 历史长卷：未要求减弱动态时，把时间轴铺成横向长卷（2D 画布，不需要 WebGL，按需载入）。
   if (page === 'history' && !matchMedia('(prefers-reduced-motion: reduce)').matches)
-    import('../features/history-scroll').then(m => { if (!signal.aborted) m.mountHistoryScroll(ctx, data.timeline); });
+    import('../features/history-scroll').then(m => { if (!signal.aborted) m.mountHistoryScroll(ctx, data.timeline); }).catch(() => { /* 增强效果没载入（离开页面、网络中断）时保留原版式 */ });
 
   if (page === 'library') {
     const input = main.querySelector('#catalog-search') as HTMLInputElement, filter = main.querySelector('#catalog-filter') as HTMLSelectElement, cards = [...main.querySelectorAll<HTMLElement>('.articles .article-link')];
@@ -32,6 +32,6 @@ export function renderCollection(ctx: RouteContext, data: Manifest, section: Sec
       if (signal.aborted) return;
       texts = entries.map(a => map[a.id]);
       if (input.value || filter.value) update();
-    });
+    }).catch(() => { /* 全文没取到时只按标题与提要筛选 */ });
   }
 }
