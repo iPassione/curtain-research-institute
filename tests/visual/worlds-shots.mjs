@@ -6,7 +6,7 @@ import path from 'node:path';
 const [base = 'http://127.0.0.1:4180', out = 'tests/visual/worlds'] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ args: ['--enable-gpu', '--ignore-gpu-blocklist'] });
-const shots = [['1-星之世界', 0.07], ['2-地层', 0.19], ['3-物质', 0.35], ['4-灵', 0.47], ['5-镜', 0.58], ['6-地层', 0.67], ['7-亡者', 0.78], ['8-时间长河', 0.93]];
+const shots = [['1-星之世界', 0.06], ['2-长河衔接', 0.205], ['3-物质', 0.36], ['4-灵', 0.46], ['5-镜', 0.57], ['6-长河衔接', 0.705], ['7-亡者', 0.845], ['8-时间长河揭晓', 0.99]];
 for (const [label, w, h, tier] of [['桌面', 1440, 900, 'full'], ['手机', 390, 844, 'lite']]) {
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') console.log('[console]', m.text().slice(0, 300)); });

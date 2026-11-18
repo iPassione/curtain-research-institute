@@ -38,7 +38,7 @@ test('滚到各层出现对应说明；往回滚说明也跟着回来', async ({
   await scrollDive(page, 0.47);
   await expect.poll(() => opacity(page, 'spirit')).toBeGreaterThan(0.9);
   await expect.poll(() => opacity(page, 'matter')).toBeLessThan(0.1);
-  await scrollDive(page, 0.78);
+  await scrollDive(page, 0.845);
   await expect.poll(() => opacity(page, 'dead')).toBeGreaterThan(0.9);
   await scrollDive(page, 0.07);
   await expect.poll(() => opacity(page, 'stars')).toBeGreaterThan(0.9);
@@ -66,4 +66,21 @@ test('减弱动态时不插入下潜', async ({ browser }) => {
   await expect(page.locator('#world-observation')).toBeVisible();
   await expect(page.locator('.worlds-dive')).toHaveCount(0);
   await context.close();
+});
+
+test('时间长河：衔接段不出现任何文字；直到亡者世界之后才揭晓名字', async ({ page }) => {
+  await openDive(page);
+  const visibleCards = () => page.locator('.worlds-card').evaluateAll(els => els.filter(e => Number(getComputedStyle(e).opacity) > 0.05).map(e => (e as HTMLElement).dataset.card));
+  for (const at of [0.205, 0.705]) {
+    await scrollDive(page, at);
+    await expect.poll(visibleCards).toEqual([]);
+  }
+  for (const at of [0.07, 0.36, 0.57, 0.845]) {
+    await scrollDive(page, at);
+    await page.waitForTimeout(700);
+    expect(await opacity(page, 'time'), `进度 ${at}`).toBeLessThan(0.05);
+  }
+  await scrollDive(page, 0.99);
+  await expect.poll(() => opacity(page, 'time')).toBeGreaterThan(0.9);
+  await expect(page.locator('.worlds-card[data-card="time"] .worlds-card-name')).toHaveText('时间长河');
 });
