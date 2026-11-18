@@ -57,3 +57,4 @@ public/data/
 public/assets/
 
 # dist/ 要提交：它是 Sites 发布读取的目录。V3 起它由 npm run build 生成，不要手工修改，改源码后重新构建。
+tests/visual/stories/

@@ -1,4 +1,4 @@
-import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-vfvv3f7G.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
+import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-DdY_ZZat.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
 uniform float uTime, uDepth, uAspect, uFocus, uRiverX, uFade;
 varying vec2 vUv;
 

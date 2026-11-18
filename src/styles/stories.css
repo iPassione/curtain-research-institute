@@ -1,0 +1,41 @@
+/* V3 阶段 7：历史研究室「长卷」与人物档案馆「星座图」。两者都是 2D 画布，减弱动态时不启用。 */
+@layer v3 {
+/* ---------- 历史长卷 ---------- */
+.page-content:has(.history-scroll) { overflow-x: clip; }
+.history-trail.is-scroll { margin: 30px 0 70px; }
+.history-scroll { position: relative; margin-inline: calc(50% - 50vw); }
+.history-sticky {
+  position: sticky; top: 0; height: 100svh; overflow: hidden;
+  background: linear-gradient(180deg, var(--paper) 0%, #efe9d8 55%, var(--paper) 100%);
+  border-block: 1px solid var(--rule);
+}
+.history-sticky > .catalog-heading { position: absolute; z-index: 2; left: 7%; right: 7%; top: 0; margin: 48px 0 0; }
+.history-river { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.history-track { position: absolute; inset: 0; z-index: 1; display: flex; margin: 0; padding: 0 22vw 0 26vw; list-style: none; will-change: transform; width: max-content; }
+.history-stop {
+  --focus: 0;
+  position: relative; flex: none; width: 44vw; max-width: 620px; padding: 0 3vw;
+  opacity: calc(0.35 + 0.65 * var(--focus));
+}
+.history-stop time, .history-stop h3, .history-stop p { position: relative; }
+.history-stop.is-high { align-self: flex-start; margin-top: max(140px, 19vh); }
+.history-stop.is-low { align-self: flex-end; margin-bottom: max(70px, 12vh); }
+.history-stop time { display: block; font: italic 500 clamp(40px, 5vw, 76px)/1 var(--latin, Georgia, serif); color: #8a6a32; letter-spacing: .02em; }
+.history-stop h3 { margin: 16px 0 12px; font: 500 clamp(24px, 2.3vw, 34px)/1.5 var(--display); color: var(--ink); text-wrap: balance; }
+.history-stop p { margin: 0; max-width: 26em; font: 15px/2 var(--display); color: var(--muted); text-wrap: pretty; text-autospace: normal; }
+.history-progress { position: absolute; left: 7%; right: 7%; bottom: 28px; height: 1px; background: #ad8d5233; z-index: 2; }
+.history-progress > span { display: block; height: 100%; background: #ad8d52; transform-origin: left; transform: scaleX(0); }
+@media (max-width: 700px) {
+  .history-track { padding: 0 12vw 0 14vw; }
+  .history-stop { width: 76vw; padding: 0 5vw; }
+  .history-stop.is-high, .history-stop.is-low { align-self: flex-start; margin: max(150px, 22vh) 0 0; }
+  .history-sticky > .catalog-heading { margin-top: 36px; }
+}
+
+/* ---------- 人物星座图 ---------- */
+.people-stage.is-constellation > svg { visibility: hidden; }
+.people-stage .constellation { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.people-stage.is-constellation .person-node { z-index: 1; background: #0b1f1dcc; border-color: #49614c99; backdrop-filter: blur(2px); transition: border-color .25s, background .25s, color .25s; }
+.people-stage.is-constellation .person-node[aria-pressed=true] { background: #2c493dd9; }
+.people-stage.is-constellation .atlas-caption { z-index: 1; }
+}
