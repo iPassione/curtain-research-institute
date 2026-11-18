@@ -4,6 +4,8 @@
 
 GitHub：`iPassione/curtain-research-institute`（私有仓库）。
 
+> 前端 V3 的施工进度、规矩与下一步见 [V3-接续说明.md](V3-接续说明.md)。
+
 ## 在另一台电脑继续
 
 先使用拥有该私有仓库权限的 GitHub 账号登录，再克隆：
