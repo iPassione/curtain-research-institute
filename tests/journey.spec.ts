@@ -96,9 +96,11 @@ test('第四幕：标题与五大陆地名出现在航海图上，结尾画面�
   await expect.poll(() => page.locator('.journey-title').evaluate(el => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.95);
   // 地名的位置由场景逐帧投影：五个都落在视口里，且彼此分开。
   await expect.poll(() => page.locator('.journey-place').first().evaluate(el => Number(el.style.opacity || 0)), { timeout: 15000 }).toBeGreaterThan(0.5);
-  const boxes = await page.locator('.journey-place').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  // 镜头跟随滚动带滑行，等它停稳：五个地名都落在视口里
   const vp = page.viewportSize()!;
-  for (const b of boxes) { expect(b.x).toBeGreaterThan(0); expect(b.x).toBeLessThan(vp.width); expect(b.y).toBeGreaterThan(0); expect(b.y).toBeLessThan(vp.height); }
+  const read = () => page.locator('.journey-place').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  await expect.poll(async () => (await read()).every(b => b.x > 0 && b.x < vp.width && b.y > 0 && b.y < vp.height), { timeout: 15000 }).toBe(true);
+  const boxes = await read();
   const [center, nw, ne, sw, se] = boxes;
   expect(nw.x).toBeLessThan(center.x); expect(nw.y).toBeLessThan(center.y);
   expect(ne.x).toBeGreaterThan(center.x); expect(ne.y).toBeLessThan(center.y);

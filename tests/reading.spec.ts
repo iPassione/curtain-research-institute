@@ -142,8 +142,8 @@ test.describe('阅读位置', () => {
 test.describe('转场与外壳', () => {
   test('从目录进入文章再返回：标题共享元素，结束后不留内联样式', async ({ page }) => {
     await page.goto('/?page=worlds');
-    await page.locator('.article-link', { hasText: '镜面之后' }).first().click();
-    await expect(page.locator('h1')).toHaveText(/镜面之后/);
+    await page.locator('.article-link:has([data-vt="worlds-mirror"])').first().click();
+    await expect(page.locator('h1')).toHaveText(/镜中世界/);
     await page.waitForTimeout(700);
     await expect(page.locator('h1')).not.toHaveAttribute('style');
     await page.goBack();
