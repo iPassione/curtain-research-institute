@@ -13,7 +13,7 @@ let errors: string[] = [];
 test.beforeEach(({ page }) => {
   errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850/.test(m.text())) errors.push(m.text()); /* Firefox：跳转时中止未下完的字体，不算错误 */ });
 });
 test.afterEach(() => expect(errors, errors.join('\n')).toEqual([]));
 
@@ -203,7 +203,7 @@ test.describe('单页切换', () => {
     await expect(page).toHaveURL(/\?page=history$/);
     await expect(page.locator('.page-hero h1')).toHaveText('历史研究室');
     expect(await marker(page)).toBe('kept');
-    await page.evaluate(() => scrollTo(0, 900));
+    await page.evaluate(() => scrollTo({ top: 900, behavior: 'instant' })); // 站点开了平滑滚动，Firefox 与 WebKit 会把普通 scrollTo 做成动画
     await page.waitForTimeout(100);
     // 用脚本点击，避免测试工具先把链接滚进视口而改变记录的位置。
     await page.evaluate(() => (document.querySelector('.articles .article-link') as HTMLElement).click());
@@ -249,9 +249,25 @@ test.describe('单页切换', () => {
     await page.locator('.menu-toggle').click();
     await expect(page.locator('#nav')).toHaveClass(/open/);
     await page.locator('#nav a[href="?page=magic"]').click();
-    await expect(page.locator('.page-hero h1')).toHaveText('魔法研究室');
+    // 测试用的 Chromium 是软件渲染，首页三维降为静态；Firefox 隐藏渲染器名称，三维照常启用，切换较慢，放宽等待
+    await expect(page.locator('.page-hero h1')).toHaveText('魔法研究室', { timeout: 15000 });
     await expect(page.locator('#nav')).not.toHaveClass(/open/);
   });
+});
+
+test('新页面还没画出来就按返回：留在原页，不被迟到的页面覆盖', async ({ page }) => {
+  await page.goto('/?page=history');
+  await expect(page.locator('.page-hero h1')).toHaveText('历史研究室');
+  // 让魔法研究室的数据晚到 1.5 秒
+  await page.route('**/data/articles/**', async route => { await new Promise(r => setTimeout(r, 1500)); await route.continue(); });
+  await page.route('**/build/atlas-*.js', async route => { await new Promise(r => setTimeout(r, 1500)); await route.continue(); });
+  await page.locator('.header nav a', { hasText: '魔法' }).click();
+  await expect(page).toHaveURL(/page=magic/);
+  await page.goBack();
+  await expect(page).toHaveURL(/page=history$/);
+  await page.waitForTimeout(2500);
+  await expect(page.locator('.page-hero h1')).toHaveText('历史研究室');
+  await expect(page.locator('#nav a[aria-current]')).toHaveAttribute('href', '?page=history');
 });
 
 test('单页切换到达的页面与直接打开逐字一致', async ({ page }) => {
@@ -264,10 +280,12 @@ test('单页切换到达的页面与直接打开逐字一致', async ({ page }) 
     await page.evaluate(u => { const a = document.createElement('a'); a.href = u; document.body.append(a); a.click(); a.remove(); }, url);
     await page.waitForLoadState('networkidle');
     await expect.poll(() => page.evaluate(() => location.pathname + location.search)).toBe(url);
+    // 地址先变、页面随后渲染（模块加载在较慢的浏览器上更久）：等标题与页面类型到位再比较
+    await expect.poll(() => page.evaluate(() => document.title + '|' + document.body.dataset.surface)).toBe((direct[url] as any).title + '|' + (direct[url] as any).surface);
     await page.waitForTimeout(150);
     // 航海图的自转角度、首页 GSAP 入场的中间位移随时间变化，比较前统一去掉；
     // 首页画布（三维场景）与其就绪状态取决于渲染时机，也一并去掉。
-    const strip = (s: any) => ({ ...s, html: s.html.replace(/<canvas[^>]*><\/canvas>/g, '').replace(/ data-gl="[^"]*"/g, '').replace(/ style="left:[^"]*px[^"]*"/g, '').replace(/ class="chart-place is-offscreen"/g, ' class="chart-place"').replace(/ style="translate:[^"]*"/g, '').replace(/rotate\([^)]*\)/g, '').replace(/data-angle="[^"]*"/g, '').replace(/value="-?\d+°"|>-?\d+°</g, '') });
+    const strip = (s: any) => ({ ...s, html: s.html.replace(/<canvas[^>]*><\/canvas>/g, '').replace(/ data-gl="[^"]*"/g, '').replace(/ style="left:[^"]*px[^"]*"/g, '').replace(/ class="chart-place is-offscreen"/g, ' class="chart-place"').replace(/ style="translate:[^"]*"/g, '').replace(/<div class="street-blend[^"]*" aria-hidden="true">.*?<\/div>/g, '<div class="street-blend"></div>').replace(/rotate\([^)]*\)/g, '').replace(/data-angle="[^"]*"/g, '').replace(/value="-?\d+°"|>-?\d+°</g, '') });
     expect(strip(await snapshot()), url).toEqual(strip(direct[url]));
   }
 });

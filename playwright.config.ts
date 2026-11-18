@@ -16,6 +16,12 @@ export default defineConfig({
     { name: 'gl-chart', testMatch: /chart\.spec\.ts$/, dependencies: ['gl-journey'], use: { ...devices['Desktop Chrome'], viewport: { width: 1100, height: 720 } } },
     { name: 'gl-casting', testMatch: /casting\.spec\.ts$/, dependencies: ['gl-chart'], use: { ...devices['Desktop Chrome'], viewport: { width: 1100, height: 720 } } },
     { name: 'gl-worlds', testMatch: /worlds\.spec\.ts$/, dependencies: ['gl-casting'], use: { ...devices['Desktop Chrome'], viewport: { width: 1100, height: 720 } } },
+    // 跨浏览器（阶段 8）：只在 CROSS=1 时加入，普通页面的测试在 Firefox 与 WebKit（Safari 内核）上各跑一遍。
+    // 这两个浏览器在测试环境里没有硬件加速，三维场景按设计降到静态版本，所以三维测试不在这里跑。
+    ...(process.env.CROSS ? [
+      { name: 'firefox', testIgnore: /(chart|journey|casting|worlds)\.spec\.ts$/, use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 900 } } },
+      { name: 'webkit', testIgnore: /(chart|journey|casting|worlds)\.spec\.ts$/, use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } } },
+    ] : []),
   ],
   webServer: { command: 'node scripts/serve.mjs dist 4173', url: 'http://127.0.0.1:4173/', reuseExistingServer: false },
 });

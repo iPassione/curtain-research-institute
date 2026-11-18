@@ -8,7 +8,7 @@ let errors: string[] = [];
 test.beforeEach(({ page }) => {
   errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850/.test(m.text())) errors.push(m.text()); /* Firefox：跳转时中止未下完的字体，不算错误 */ });
 });
 test.afterEach(() => expect(errors, errors.join('\n')).toEqual([]));
 
@@ -26,7 +26,7 @@ test.describe('全站检索', () => {
       // 键盘选中这一条再回车。
       const index = await chapter.evaluate(li => [...li.parentElement!.children].indexOf(li));
       for (let i = 0; i < index; i++) await input.press('ArrowDown');
-      await expect(chapter).toHaveAttribute('aria-selected', 'true');
+      await expect(chapter.locator('[role=option]')).toHaveAttribute('aria-selected', 'true');
       await input.press('Enter');
       await expect(page.locator('.search-dialog')).not.toBeVisible();
       await expect(page).toHaveURL(/\?article=[a-z0-9-]+#chapter-\d+$/);
@@ -112,7 +112,7 @@ test.describe('阅读位置', () => {
     await page.goto('/?article=history-discrete-full');
     await expect(page.locator('.resume')).toHaveCount(0);
     const target = page.locator('#chapter-3 p').nth(1);
-    await target.evaluate(el => scrollTo(0, el.getBoundingClientRect().top + scrollY - innerHeight * 0.2));
+    await target.evaluate(el => scrollTo({ top: el.getBoundingClientRect().top + scrollY - innerHeight * 0.2, behavior: 'instant' }));
     await page.waitForTimeout(700);
     await page.reload();
     const bar = page.locator('.resume');
