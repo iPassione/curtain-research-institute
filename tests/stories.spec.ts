@@ -5,7 +5,7 @@ let errors: string[] = [];
 test.beforeEach(({ page }) => {
   errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850/.test(m.text())) errors.push(m.text()); /* Firefox：跳转时中止未下完的字体，不算错误 */ });
+  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850|WebGL: context lost/.test(m.text())) errors.push(m.text()); /* Firefox 跳转时中止未下完的字体、WebKit 并行时丢失 WebGL 上下文（网站会退回静态版），都不算错误 */ });
 });
 test.afterEach(() => expect(errors, errors.join('\n')).toEqual([]));
 

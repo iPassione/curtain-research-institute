@@ -5,7 +5,7 @@ let errors: string[] = [];
 test.beforeEach(({ page }) => {
   errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850/.test(m.text())) errors.push(m.text()); /* Firefox：跳转时中止未下完的字体，不算错误 */ });
+  page.on('console', m => { if (m.type() === 'error' && !/status=2152398850|WebGL: context lost/.test(m.text())) errors.push(m.text()); /* Firefox 跳转时中止未下完的字体、WebKit 并行时丢失 WebGL 上下文（网站会退回静态版），都不算错误 */ });
 });
 test.afterEach(() => expect(errors, errors.join('\n')).toEqual([]));
 
@@ -13,7 +13,7 @@ const setDial = (page: import('@playwright/test').Page, v: number) =>
   page.locator('.street-dial input').evaluate((el: HTMLInputElement, v) => { el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); }, v);
 
 test('城市切片：拖动时间轴连续过渡，越过中点时文字与地址跟着切换，入夜亮灯', async ({ page }) => {
-  await page.goto('/?page=street&place=bakery&time=morning');
+  await page.goto('/?page=street&place=bakery&time=morning&gl=static'); // DOM 版过渡（有三维时由 depth.spec.ts 覆盖）
   const dial = page.locator('.street-dial input');
   await expect(dial).toHaveAttribute('aria-valuetext', '清晨');
   await dial.hover();
@@ -37,7 +37,7 @@ test('城市切片：拖动时间轴连续过渡，越过中点时文字与地�
 });
 
 test('城市切片：键盘左右键走到相邻时段；按钮点击带过渡', async ({ page }) => {
-  await page.goto('/?page=street&time=noon');
+  await page.goto('/?page=street&time=noon&gl=static');
   const dial = page.locator('.street-dial input');
   await dial.focus();
   await page.keyboard.press('ArrowRight');

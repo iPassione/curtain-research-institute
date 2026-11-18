@@ -80,3 +80,8 @@
 @keyframes stamp{from{transform:translateY(-50%) rotate(-12deg) scale(1.6);opacity:0}}
 @media(max-width:720px){.travel-route-head{grid-template-columns:1fr;justify-items:center}.travel-route-head .journey-route{width:100%}.packing-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.route-draw{animation:none;stroke-dashoffset:0}.route-to,.route-gate circle,.route-gate-line{animation:none;opacity:1}.route-loop{animation:none}.packing-list li,.packing-list li:has(input:checked)::after{transition:none;animation:none}}
+/* 深度视差（三维）：画布铺在原图上，指针事件交给下面的编号按钮；三维接管时 DOM 版的过渡层与灯光层不再显示 */
+.street-gl,.specimen-gl{position:absolute;inset:0;z-index:0;pointer-events:none}
+.street-gl .gl-canvas,.specimen-gl .gl-canvas{display:block;width:100%;height:100%}
+.street-scene-wrap[data-gl=on] .street-blend,.street-scene-wrap[data-gl=on] .street-lights{display:none}
+.specimen-image[data-display=plate] .specimen-gl{display:none}

@@ -3,6 +3,7 @@
 // 过了午后，入夜图里的窗户、街灯与被照亮的石板路（灯光遮罩由 scripts/derive-lights.mjs 从原图派生）逐渐亮起，带一层微微摇曳的光晕。
 // 原有三个时段按钮保留为时间轴下方的刻度；文字、地址参数仍按最近的时段切换。
 // 叠加层只在读者第一次接近时间轴时载入，三张图解码完成之前，仍按原来的方式直接换图。
+// 有三维时（src/gl/depth-room.ts，带深度视差），画面由三维场景按 onChange 报告的进度来画，DOM 叠加层不载入。
 import { fallback, webpImg } from '../lib/images';
 
 type Opts = {
@@ -11,13 +12,15 @@ type Opts = {
   names: string[];            // 清晨 / 午后 / 入夜
   initial: number;
   onSettle: (index: number) => void; // 最近的时段变化时调用：更新文字、地址与底图
+  onChange?: (v: number, lights: number) => void; // 每次进度变化时调用（三维场景用）
   signal: AbortSignal;
 };
 
 const SRC = ['morning', 'noon', 'evening'].map(t => `assets/street/prunoiva-${t}.png`);
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-export function mountStreetTime({ wrap, group, names, initial, onSettle, signal }: Opts) {
+export function mountStreetTime({ wrap, group, names, initial, onSettle, onChange, signal }: Opts) {
+  const gl = () => wrap.dataset.gl === 'on' || wrap.dataset.gl === 'loading'; // 三维接管画面时不载入 DOM 叠加层
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let v = initial, settled = initial, ready = false, loading = false, raf = 0;
 
@@ -64,6 +67,7 @@ export function mountStreetTime({ wrap, group, names, initial, onSettle, signal 
       lights.querySelectorAll('i').forEach(el => { el.style.backgroundImage = url; el.style.maskImage = el.style.webkitMaskImage = 'url("assets/data/street-lights.png")'; });
     }
     wrap.style.setProperty('--lights', on.toFixed(3));
+    onChange?.(v, on);
     dial.style.setProperty('--t', (v / 2).toFixed(4));
     input.value = String(Math.round(v * 100));
     const near = Math.round(v);
@@ -72,7 +76,7 @@ export function mountStreetTime({ wrap, group, names, initial, onSettle, signal 
   };
 
   const load = () => {
-    if (loading) return;
+    if (loading || gl()) return;
     loading = true;
     blend.innerHTML = SRC.map(s => webpImg(s, 'alt="" decoding="async"', getComputedStyle(wrap).width)).join('');
     layers = [...blend.querySelectorAll('img')];
@@ -81,7 +85,7 @@ export function mountStreetTime({ wrap, group, names, initial, onSettle, signal 
 
   const tween = (to: number) => {
     cancelAnimationFrame(raf);
-    if (!ready || reduced.matches) { v = to; apply(); return; }
+    if (!(ready || wrap.dataset.gl === 'on') || reduced.matches) { v = to; apply(); return; }
     const from = v, dur = 900 + 500 * Math.abs(to - from), t0 = performance.now();
     const step = (now: number) => {
       const k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -108,5 +112,5 @@ export function mountStreetTime({ wrap, group, names, initial, onSettle, signal 
   }, { signal });
 
   apply();
-  return { goTo: (index: number) => tween(index) };
+  return { goTo: (index: number) => tween(index), state: () => ({ v, lights: smooth(1.35, 1.95, v) }) };
 }
