@@ -1,4 +1,4 @@
-import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-qAVWwbAa.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
+import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-Pz94Yje7.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
 uniform float uTime, uDepth, uAspect, uFocus, uFade;
 varying vec2 vUv;
 
@@ -70,17 +70,82 @@ vec3 matter(vec2 p){
 }
 
 // ---------- 灵之世界：心灵、故事与梦境 ----------
-// 蓝紫色的水墨晕染，域扭曲后缓缓流动；若隐若现的细光丝穿行其中（故事与梦境的脉络）。
+// 依据《六大世界》：灵之世界温润祥和。拥有灵之视觉的人看到的是一幅油画：
+// 琥珀、蜜桃、玫瑰、奶油、淡鼠尾草绿与柔紫的色块柔和地交叠晕开，边缘不留硬线；
+// 每块颜料有自己的笔触方向与刷痕，厚涂处有一点微光，底下透出画布纹理；整幅画像温水一样缓缓流转。
+vec3 spiritPaint(float t){
+  // 暖色调色板：t 在 0–1 之间取色
+  vec3 c0 = vec3(0.93, 0.70, 0.42); // 琥珀
+  vec3 c1 = vec3(0.96, 0.78, 0.62); // 蜜桃
+  vec3 c2 = vec3(0.86, 0.58, 0.56); // 玫瑰
+  vec3 c3 = vec3(0.97, 0.90, 0.76); // 奶油
+  vec3 c4 = vec3(0.66, 0.74, 0.60); // 淡鼠尾草绿
+  vec3 c5 = vec3(0.72, 0.62, 0.80); // 柔紫
+  t = fract(t) * 6.0;
+  vec3 c = c0;
+  c = mix(c, c1, smoothstep(0.0, 1.0, t));
+  c = mix(c, c2, smoothstep(1.0, 2.0, t));
+  c = mix(c, c3, smoothstep(2.0, 3.0, t));
+  c = mix(c, c4, smoothstep(3.0, 4.0, t));
+  c = mix(c, c5, smoothstep(4.0, 5.0, t));
+  c = mix(c, c0, smoothstep(5.0, 6.0, t));
+  return c;
+}
 vec3 spirit(vec2 p){
-  vec2 w = vec2(fbm(p * 1.3 + vec2(0.0, uTime * 0.04)), fbm(p * 1.3 + vec2(5.2, -uTime * 0.035)));
-  float f = fbm(p * 1.7 + w * 2.6);
-  vec3 col = mix(vec3(0.05, 0.06, 0.11), vec3(0.30, 0.35, 0.50), smoothstep(0.3, 0.8, f));
-  col = mix(col, vec3(0.30, 0.25, 0.40), smoothstep(0.5, 0.85, w.x) * 0.5);
-  // 水墨边缘：晕染交界处略深
-  col *= 0.85 + 0.15 * smoothstep(0.0, 0.08, abs(f - 0.5));
-  // 细光丝
-  col += vec3(0.82, 0.80, 1.0) * hair(f - 0.58, 0.0025) * 0.6;
-  col += TEAL * hair(f - 0.42, 0.002) * 0.25;
+  // 缓慢流转的底层流场，让颜料像在温水里慢慢变形
+  vec2 w = vec2(fbm(p * 0.8 + vec2(0.0, uTime * 0.025)), fbm(p * 0.8 + vec2(4.3, -uTime * 0.02)));
+  float flowAng = (w.x - w.y) * 3.0;
+  // 底层色块：权重收紧，每块颜色纯而分明，交界只留窄窄一道晕染
+  vec2 q = p * 2.4 + (w - 0.5) * 1.6;
+  vec2 i = floor(q), f = fract(q);
+  // 先找最近的颜料中心，权重以它为基准：任何位置都至少有一块完整的颜色，不会因权重过小而发黑
+  float dmin = 9.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 o = 0.5 + 0.38 * sin(uTime * 0.05 + 6.2832 * vec2(h1(i + g), h2(i + g))); // 颜料中心缓缓游移
+    dmin = min(dmin, length(g + o - f));
+  }
+  vec3 col = vec3(0.0);
+  float total = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 o = 0.5 + 0.38 * sin(uTime * 0.05 + 6.2832 * vec2(h1(i + g), h2(i + g)));
+    float d = length(g + o - f);
+    float wgt = exp(-(d * d - dmin * dmin) * 18.0);
+    col += spiritPaint(h1(i + g + 17.0) + uTime * 0.004) * wgt;
+    total += wgt;
+  }
+  col /= total;
+  // 上层短笔触：小而短的椭圆，一笔一笔点上去；颜色是底色稍亮或稍深的版本，方向随流场微偏
+  vec2 q2 = p * 9.0 + (w - 0.5) * 1.4;
+  vec2 i2 = floor(q2), f2 = fract(q2);
+  float cover = 0.0; vec3 dab = col; vec2 dabDir = vec2(1.0, 0.0);
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 o = vec2(h1(i2 + g + 3.0), h2(i2 + g + 5.0));
+    vec2 d = g + o - f2;
+    float a = flowAng + (h1(i2 + g + 9.0) - 0.5) * 0.9;
+    vec2 dir = vec2(cos(a), sin(a));
+    vec2 r = vec2(dot(d, dir), dot(d, vec2(-dir.y, dir.x)));
+    float m = 1.0 - smoothstep(0.42, 0.55, length(r * vec2(1.0, 2.8)));
+    if (m > cover) {
+      cover = m;
+      float shade = h2(i2 + g + 11.0);
+      dab = col * (0.82 + 0.4 * shade) + vec3(0.04, 0.02, 0.0) * shade;
+      dabDir = dir;
+    }
+  }
+  col = mix(col, dab, cover * 0.85);
+  // 刷痕与厚涂处的微光
+  // 刷痕沿每一笔自己的方向（用随位置变化的流场角度会转出一圈圈木纹）
+  float bristle = noise(vec2(dot(q2, dabDir) * 3.0, dot(q2, vec2(-dabDir.y, dabDir.x)) * 18.0));
+  col *= 0.9 + 0.16 * bristle;
+  col += vec3(1.0, 0.95, 0.86) * pow(bristle, 6.0) * 0.12 * cover;
+  // 画布纹理
+  vec2 cv = p * 260.0;
+  col *= 0.98 + 0.02 * noise(cv * 0.5);
+  // 温暖而不刺眼：中央略亮
+  col *= 0.74 + 0.14 * exp(-dot(p, p) * 2.0);
   return col;
 }
 
