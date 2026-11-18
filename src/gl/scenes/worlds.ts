@@ -27,7 +27,7 @@ export function createWorldsScene(renderer: WebGLRenderer, startTier: Tier): Wor
       uniforms.uAspect.value = w / h;
     },
     frame(dt, time) {
-      const k = first ? 1 : 1 - Math.exp(-dt * 4);
+      const k = first ? 1 : 1 - Math.exp(-dt * 2.6); // 跟随滚动再柔和一些，衔接处滑过去而不是跳过去
       first = false;
       uniforms.uTime.value = time;
       uniforms.uDepth.value += (want.depth - uniforms.uDepth.value) * k;

@@ -26,7 +26,7 @@ const lerpKeys = (keys: [number, number][], p: number) => {
 };
 /** 各世界说明出现的进度区间：[开始, 结束]。长河衔接段不出现任何文字；
  *  「时间长河」直到亡者世界之后才揭晓（读者此时才意识到，自己一直随着它漂流）。 */
-const CARDS: [string, number, number][] = [['stars', 0.01, 0.12], ['matter', 0.31, 0.4], ['spirit', 0.42, 0.5], ['mirror', 0.52, 0.61], ['dead', 0.8, 0.89], ['time', 0.95, 2]];
+const CARDS: [string, number, number][] = [['stars', 0.01, 0.12], ['matter', 0.31, 0.4], ['spirit', 0.42, 0.5], ['mirror', 0.52, 0.61], ['dead', 0.8, 0.89], ['time', 0.965, 2]];
 
 export function mountWorldsDive(ctx: RouteContext, hero: HTMLElement, worlds: WorldEntry[]) {
   const stage = getStage();
@@ -68,8 +68,10 @@ export function mountWorldsDive(ctx: RouteContext, hero: HTMLElement, worlds: Wo
     tl.fromTo('.worlds-dive-depth > span', { scaleY: 0 }, { scaleY: 1, duration: 1 }, 0);
     for (const [id, a, b] of CARDS) {
       const card = `.worlds-card[data-card="${id}"]`;
-      tl.fromTo(card, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.025, ease: 'power2.out' }, a);
-      if (b <= 1) tl.to(card, { opacity: 0, y: -30, duration: 0.02, ease: 'power1.in' }, b - 0.02); // 揭晓后的「时间长河」留在画面上
+      // 出现与消失都带一点模糊过渡；「时间长河」等长河完全铺开后才慢慢浮现，并留在画面上
+      const slow = id === 'time';
+      tl.fromTo(card, { opacity: 0, y: 24, filter: 'blur(6px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: slow ? 0.03 : 0.025, ease: 'power2.out' }, a);
+      if (b <= 1) tl.to(card, { opacity: 0, y: -24, filter: 'blur(6px)', duration: 0.02, ease: 'power1.in' }, b - 0.02);
     }
     tl.set({}, {}, 1);
     const p = tl.scrollTrigger?.progress ?? 0;

@@ -1,4 +1,4 @@
-import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-Pz94Yje7.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
+import{t as e}from"./gsap-B0gpcuWg.js";import{t}from"./ScrollTrigger-B-BxMyCy.js";import{c as n}from"./index-CzFjetgc.js";import{O as r,_ as i,k as a,m as o,t as s,y as c}from"./stage-kHJ78NE5.js";var l=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,u=`
 uniform float uTime, uDepth, uAspect, uFocus, uFade;
 varying vec2 vUv;
 
@@ -150,27 +150,72 @@ vec3 spirit(vec2 p){
 }
 
 // ---------- 镜中世界：扭曲与替换 ----------
-// 物质界的等高线左右颠倒，被打碎成错位的镜片；反色偏冷；镜片之间是银色的细裂纹，边缘有一点色散。
-vec2 shards(vec2 p){
-  vec2 i = floor(p * 3.2), f = fract(p * 3.2);
-  float best = 9.0, second = 9.0; vec2 id = vec2(0.0);
+// 依据馆藏：「扭曲、混沌与无序构成现实的反面。镜中生灵窥视着物质世界，寻找替换对应原主的机会。」
+// 一面氧化发乌的旧银镜：霉斑、细划痕、冷灰里透一点病态的青。镜中映着物质界的等高线——左右颠倒、缓慢扭动；
+// 每块碎片里的倒影会不时突然错位，与相邻碎片对不上；偶尔有一圈涟漪从镜子背后荡开，像有什么贴着玻璃；
+// 极少数碎片里会慢慢浮现一对苍白的光点，停一会儿又淡去（只有光点，不画具体形象）。克制：越看越不对劲，而不吓人。
+vec3 shards(vec2 p){
+  vec2 i = floor(p * 4.4), f = fract(p * 4.4);
+  float best = 9.0, second = 9.0; vec2 id = vec2(0.0), center = vec2(0.0);
   for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
     vec2 g = vec2(float(x), float(y));
     vec2 o = vec2(h1(i + g), h2(i + g));
     float d = length(g + o - f);
-    if (d < best) { second = best; best = d; id = i + g; } else if (d < second) second = d;
+    if (d < best) { second = best; best = d; id = i + g; center = g + o - f; } else if (d < second) second = d;
   }
-  return vec2(second - best, h1(id));
+  return vec3(second - best, h1(id), h2(id));
 }
+// 每块碎片自己的倾角：同一束光在各块上的反光不同，碎片才像一块块各自歪着的镜片
+float tilt(vec2 p, vec3 sh){ vec2 d = vec2(cos(sh.y * 6.2832), sin(sh.y * 6.2832)); return 0.5 + 0.5 * sin(dot(p, d) * 2.4 + sh.z * 6.0); }
 vec3 mirror(vec2 p){
-  vec2 sh = shards(p + vec2(0.0, uTime * 0.01));
-  vec2 offset = (vec2(sh.y, fract(sh.y * 7.0)) - 0.5) * 0.08;
-  vec2 m = vec2(-p.x, p.y) + offset;
-  float hr = terrain(m + vec2(0.003, 0.0)), hb = terrain(m - vec2(0.003, 0.0));
-  float vr = (fract(hr * 16.0) - 0.5) / 16.0, vb = (fract(hb * 16.0) - 0.5) / 16.0;
-  vec3 col = mix(vec3(0.05, 0.05, 0.08), vec3(0.11, 0.11, 0.17), sh.y);
-  col += vec3(0.75, 0.62, 0.70) * hair(vr, 0.0009) * 0.4 + vec3(0.55, 0.70, 0.85) * hair(vb, 0.0009) * 0.4;
-  col += vec3(0.82, 0.85, 0.92) * hair(sh.x, 0.004) * 0.35;
+  vec3 sh = shards(p);
+  // 倒影错位：每块碎片的偏移每隔几秒突然跳一次，各块不同步
+  float beat = floor(uTime * 0.22 + sh.y * 7.0);
+  vec2 slip = (vec2(h1(vec2(beat, sh.y)), h2(vec2(sh.z, beat))) - 0.5) * 0.09;
+  // 镜子背后的压痕：一个缓慢游移的点，周期性地荡出一圈涟漪
+  vec2 presser = vec2(sin(uTime * 0.07) * 0.18, cos(uTime * 0.05) * 0.3);
+  float age = fract(uTime * 0.11);
+  float rd = length(p - presser);
+  float ring = exp(-pow((rd - age * 0.45) * 26.0, 2.0)) * (1.0 - age);
+  // 缓慢的扭动 + 左右颠倒
+  vec2 m = vec2(-p.x, p.y) + slip;
+  m += vec2(sin(m.y * 7.0 + uTime * 0.3), cos(m.x * 6.0 - uTime * 0.25)) * 0.012;
+  m += (p - presser) / max(rd, 1e-3) * ring * 0.02;
+  float h = terrain(m);
+  float v = (fract(h * 16.0) - 0.5) / 16.0;
+  // 旧银镜：冷灰底，病态的青，霉斑与细划痕
+  vec3 col = mix(vec3(0.09, 0.10, 0.105), vec3(0.19, 0.21, 0.21), smoothstep(0.2, 0.8, h));
+  col = mix(col, col * vec3(0.85, 1.0, 0.92), 0.5);
+  float fox = smoothstep(0.62, 0.78, fbm(p * 6.0 + 3.0));
+  col *= 1.0 - fox * 0.45;
+  col += vec3(0.5, 0.45, 0.35) * smoothstep(0.7, 0.85, fbm(p * 14.0 + 9.0)) * 0.05;
+  float scratch = hair(fract(dot(p, vec2(0.93, 0.37)) * 55.0 + noise(p * 8.0) * 0.6) - 0.5, 0.01) * step(0.6, noise(p * 3.0));
+  col += vec3(0.6) * scratch * 0.06;
+  // 倒影的等高线：苍白、轻微色散
+  float hr = terrain(m + vec2(0.0025, 0.0)), hb = terrain(m - vec2(0.0025, 0.0));
+  col += vec3(0.72, 0.70, 0.66) * hair((fract(hr * 16.0) - 0.5) / 16.0, 0.0008) * 0.3;
+  col += vec3(0.50, 0.66, 0.66) * hair((fract(hb * 16.0) - 0.5) / 16.0, 0.0008) * 0.3;
+  col += vec3(0.65, 0.75, 0.72) * ring * 0.12;
+  // 各块碎片的明暗与一道斜向的冷光各不相同
+  col *= 0.78 + 0.4 * sh.z;
+  col += vec3(0.55, 0.62, 0.62) * pow(tilt(p, sh), 6.0) * 0.12;
+  // 镜子里有什么在走：一团看不清的暗影，只在倒影里，缓慢横穿过去（按碎片错位，所以它也是断开的）
+  vec2 walker = vec2(mod(uTime * 0.035, 1.6) - 0.8, 0.08 + sin(uTime * 0.05) * 0.1);
+  float shade = smoothstep(0.32, 0.0, length((m - vec2(-walker.x, walker.y)) * vec2(1.7, 0.75)));
+  col *= 1.0 - 0.55 * shade;
+  // 碎片之间的裂纹：细而冷的银线，裂口一侧发暗
+  col *= 1.0 - 0.5 * exp(-sh.x * 60.0);
+  col += vec3(0.78, 0.82, 0.84) * hair(sh.x, 0.0035) * 0.3;
+  // 窥视：少数碎片里浮现一对苍白的光点，缓慢出现、停留、淡去
+  float watch = step(0.8, h1(vec2(sh.y * 13.0, floor(uTime * 0.09 + sh.z * 3.0))));
+  float life = sin(fract(uTime * 0.09 + sh.z * 3.0) * 3.1416);
+  vec2 eye = p * 4.4 - floor(p * 4.4) - vec2(0.5, 0.45);
+  vec2 e1 = (eye - vec2(0.085, 0.0)) * vec2(1.0, 2.4), e2 = (eye + vec2(0.085, 0.0)) * vec2(1.0, 2.4);
+  float pair = exp(-pow(length(e1) * 24.0, 2.0)) + exp(-pow(length(e2) * 24.0, 2.0));
+  float halo = exp(-pow(length(e1) * 7.0, 2.0)) + exp(-pow(length(e2) * 7.0, 2.0));
+  col += (vec3(0.88, 0.90, 0.80) * pair + vec3(0.4, 0.5, 0.45) * halo * 0.12) * watch * smoothstep(0.2, 0.8, life) * 0.9;
+  // 越靠边越暗，像镜框里积着的黑
+  col *= 0.75 + 0.25 * smoothstep(0.9, 0.2, abs(p.y) * 1.4);
   return col;
 }
 
@@ -225,15 +270,18 @@ vec3 river(vec2 p, float sy, float shape, float k){
 }
 
 
+// 柱上 [a, b] 一段世界的浓度：两端各有约 0.6 屏的羽化
+float presence(float y, float a, float b){ return smoothstep(a - 0.3, a + 0.3, y) * (1.0 - smoothstep(b - 0.3, b + 0.3, y)); }
+
 void main(){
   vec2 p = vec2((vUv.x - 0.5) * uAspect, 0.5 - vUv.y); // p.y 向下为正
   float y = uDepth + p.y;                                // 诸界柱上的纵坐标
   float sy = -vUv.y;                                      // 画面坐标：长河用它，所以跟着读者
 
-  // 各世界在柱上的位置与柔和的边界
-  float wS = 1.0 - smoothstep(0.8, 1.15, y);
-  float wM = smoothstep(1.85, 2.2, y) * (1.0 - smoothstep(2.8, 3.15, y));
-  float wD = smoothstep(3.85, 4.2, y) * (1.0 - smoothstep(4.8, 5.15, y));
+  // 各世界在柱上的位置；边界羽化放宽到约 0.6 屏，世界与长河之间是一段渐隐而不是一道分界
+  float wS = presence(y, -9.0, 1.0);
+  float wM = presence(y, 2.0, 3.0);
+  float wD = presence(y, 4.0, 5.0);
   float world = clamp(wS + wM + wD, 0.0, 1.0);
 
   vec3 col = vec3(0.006, 0.01, 0.014);
@@ -255,17 +303,20 @@ void main(){
   }
   if (wD > 0.0) col = mix(col, dead(p, y), wD);
 
-  // 长河：世界之中隐入深处（只用加光，淡得几乎只是底光）；衔接段与最后展开成画面的主体
-  // 画面中心所在的层决定长河展开的程度
+  // 长河：世界之中隐入深处，衔接段与最后展开成画面的主体。
+  // 画面中心所在的层（整体状态）与此处的世界浓度共同决定亮度：整体占六成，避免画面里出现横向的明暗分界。
+  // 离开世界时先亮（中心先亮起），再展开（光丝随后铺开），两条曲线分开。
   float yc = uDepth;
-  float worldC = clamp((1.0 - smoothstep(0.8, 1.15, yc)) + smoothstep(1.85, 2.2, yc) * (1.0 - smoothstep(2.8, 3.15, yc)) + smoothstep(3.85, 4.2, yc) * (1.0 - smoothstep(4.8, 5.15, yc)), 0.0, 1.0);
-  float k = 1.0 - world;
-  col += river(p, sy, 1.0 - worldC, k) * (1.0 - 0.7 * world);
+  float worldC = clamp(presence(yc, -9.0, 1.0) + presence(yc, 2.0, 3.0) + presence(yc, 4.0, 5.0), 0.0, 1.0);
+  float open = 1.0 - worldC;
+  float bright = mix(1.0 - world, smoothstep(0.0, 0.55, open), 0.6);
+  float shape = smoothstep(0.25, 0.95, open);
+  col += river(p, sy, shape, bright) * (1.0 - 0.6 * world);
 
   // 暗角
   col *= 1.0 - 0.35 * smoothstep(0.4, 1.0, length(vec2(p.x / uAspect, p.y) * 1.6));
   gl_FragColor = vec4(col * uFade, 1.0);
-}`;function d(e,t){let n=t,s=new r,d=new i(-1,1,1,-1,0,1),f={uTime:{value:0},uDepth:{value:0},uAspect:{value:1},uFocus:{value:0},uFade:{value:1}},p=new o(new c(2,2),new a({uniforms:f,vertexShader:l,fragmentShader:u,depthTest:!1,depthWrite:!1}));p.frustumCulled=!1,s.add(p);let m={depth:0,focus:0},h=!0;return{set(e,t,n){m={depth:e,focus:t},n&&(h=!0)},resize(e,t){f.uAspect.value=e/t},frame(t,n){let r=h?1:1-Math.exp(-t*4);h=!1,f.uTime.value=n,f.uDepth.value+=(m.depth-f.uDepth.value)*r,f.uFocus.value+=(m.focus-f.uFocus.value)*r,e.setRenderTarget(null),e.render(s,d)},setTier(e){return n=e,n!==`static`},dispose(){p.geometry.dispose(),p.material.dispose()}}}var f=[[0,.5],[.1,.5],[.17,1.5],[.24,1.5],[.31,2.5],[.6,2.5],[.67,3.5],[.74,3.5],[.81,4.5],[.88,4.5],[.95,5.5],[1,5.5]],p=[[.31,0],[.39,0],[.43,1],[.49,1],[.53,2],[.6,2]],m=(e,t)=>{if(t<=e[0][0])return e[0][1];for(let n=1;n<e.length;n++){let[r,i]=e[n],[a,o]=e[n-1];if(t<=r){let e=(t-a)/(r-a),n=e*e*(3-2*e);return o+(i-o)*n}}return e[e.length-1][1]},h=[[`stars`,.01,.12],[`matter`,.31,.4],[`spirit`,.42,.5],[`mirror`,.52,.61],[`dead`,.8,.89],[`time`,.95,2]];function g(r,i,a){let o=s();if(o.tier===`static`)return;e.registerPlugin(t);let c=Object.fromEntries(a.map(e=>[e.id,e])),l=document.createElement(`section`);l.className=`worlds-dive`,l.dataset.gl=`loading`,l.setAttribute(`aria-label`,`下潜观测：六大世界`),l.innerHTML=`<div class="worlds-dive-stage"><div class="worlds-dive-gl" aria-hidden="true"></div>
+}`;function d(e,t){let n=t,s=new r,d=new i(-1,1,1,-1,0,1),f={uTime:{value:0},uDepth:{value:0},uAspect:{value:1},uFocus:{value:0},uFade:{value:1}},p=new o(new c(2,2),new a({uniforms:f,vertexShader:l,fragmentShader:u,depthTest:!1,depthWrite:!1}));p.frustumCulled=!1,s.add(p);let m={depth:0,focus:0},h=!0;return{set(e,t,n){m={depth:e,focus:t},n&&(h=!0)},resize(e,t){f.uAspect.value=e/t},frame(t,n){let r=h?1:1-Math.exp(-t*2.6);h=!1,f.uTime.value=n,f.uDepth.value+=(m.depth-f.uDepth.value)*r,f.uFocus.value+=(m.focus-f.uFocus.value)*r,e.setRenderTarget(null),e.render(s,d)},setTier(e){return n=e,n!==`static`},dispose(){p.geometry.dispose(),p.material.dispose()}}}var f=[[0,.5],[.1,.5],[.17,1.5],[.24,1.5],[.31,2.5],[.6,2.5],[.67,3.5],[.74,3.5],[.81,4.5],[.88,4.5],[.95,5.5],[1,5.5]],p=[[.31,0],[.39,0],[.43,1],[.49,1],[.53,2],[.6,2]],m=(e,t)=>{if(t<=e[0][0])return e[0][1];for(let n=1;n<e.length;n++){let[r,i]=e[n],[a,o]=e[n-1];if(t<=r){let e=(t-a)/(r-a),n=e*e*(3-2*e);return o+(i-o)*n}}return e[e.length-1][1]},h=[[`stars`,.01,.12],[`matter`,.31,.4],[`spirit`,.42,.5],[`mirror`,.52,.61],[`dead`,.8,.89],[`time`,.965,2]];function g(r,i,a){let o=s();if(o.tier===`static`)return;e.registerPlugin(t);let c=Object.fromEntries(a.map(e=>[e.id,e])),l=document.createElement(`section`);l.className=`worlds-dive`,l.dataset.gl=`loading`,l.setAttribute(`aria-label`,`下潜观测：六大世界`),l.innerHTML=`<div class="worlds-dive-stage"><div class="worlds-dive-gl" aria-hidden="true"></div>
 <a class="worlds-dive-skip" href="#world-observation">跳到观测台 ↓</a>
 <div class="worlds-dive-cards" aria-hidden="true">${h.map(([e])=>{let t=c[e];return t?`<div class="worlds-card" data-card="${e}"><p class="worlds-card-pos">${n(t.position)}</p><p class="worlds-card-name">${n(t.name)}</p><p class="worlds-card-title">${n(t.title)}</p><p class="worlds-card-text">${n(t.text)}</p><p class="worlds-card-auth"><span>代表权柄</span>${n(t.authority)}</p></div>`:``}).join(``)}</div>
-<div class="worlds-dive-depth" aria-hidden="true"><span></span></div></div>`,i.after(l),r.onCleanup(()=>l.remove());let u=l.querySelector(`.worlds-dive-gl`),g=null;try{g=d(o.renderer,o.tier),o.mount(u,g,()=>{l.dataset.gl=`on`}),r.onCleanup(()=>o.unmount())}catch(e){console.warn(`诸界下潜未能启动。`,e),l.remove();return}let _=e.context(()=>{let t=e.timeline({defaults:{ease:`none`},scrollTrigger:{trigger:l,start:`top top`,end:`bottom bottom`,scrub:.5,onUpdate:e=>g?.set(m(f,e.progress),m(p,e.progress))}});t.fromTo(`.worlds-dive-depth > span`,{scaleY:0},{scaleY:1,duration:1},0);for(let[e,n,r]of h){let i=`.worlds-card[data-card="${e}"]`;t.fromTo(i,{opacity:0,y:30},{opacity:1,y:0,duration:.025,ease:`power2.out`},n),r<=1&&t.to(i,{opacity:0,y:-30,duration:.02,ease:`power1.in`},r-.02)}t.set({},{},1);let n=t.scrollTrigger?.progress??0;g?.set(m(f,n),m(p,n),!0)},l);r.onCleanup(()=>_.revert())}export{g as mountWorldsDive};
+<div class="worlds-dive-depth" aria-hidden="true"><span></span></div></div>`,i.after(l),r.onCleanup(()=>l.remove());let u=l.querySelector(`.worlds-dive-gl`),g=null;try{g=d(o.renderer,o.tier),o.mount(u,g,()=>{l.dataset.gl=`on`}),r.onCleanup(()=>o.unmount())}catch(e){console.warn(`诸界下潜未能启动。`,e),l.remove();return}let _=e.context(()=>{let t=e.timeline({defaults:{ease:`none`},scrollTrigger:{trigger:l,start:`top top`,end:`bottom bottom`,scrub:.5,onUpdate:e=>g?.set(m(f,e.progress),m(p,e.progress))}});t.fromTo(`.worlds-dive-depth > span`,{scaleY:0},{scaleY:1,duration:1},0);for(let[e,n,r]of h){let i=`.worlds-card[data-card="${e}"]`,a=e===`time`;t.fromTo(i,{opacity:0,y:24,filter:`blur(6px)`},{opacity:1,y:0,filter:`blur(0px)`,duration:a?.03:.025,ease:`power2.out`},n),r<=1&&t.to(i,{opacity:0,y:-24,filter:`blur(6px)`,duration:.02,ease:`power1.in`},r-.02)}t.set({},{},1);let n=t.scrollTrigger?.progress??0;g?.set(m(f,n),m(p,n),!0)},l);r.onCleanup(()=>_.revert())}export{g as mountWorldsDive};
