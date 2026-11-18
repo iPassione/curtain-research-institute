@@ -230,20 +230,58 @@ vec3 mirror(vec2 p){
 }
 
 // ---------- 亡者世界：死亡与归宿 ----------
-// 深梅黑；三层景深的灰烬缓缓下沉（远处小而慢、近处大而略快）；薄雾横移；地平线上一抹苍白的微光。
-vec3 dead(vec2 p, float y){
-  vec3 col = mix(vec3(0.045, 0.03, 0.045), vec3(0.015, 0.012, 0.02), smoothstep(4.0, 5.0, y));
-  col += vec3(0.08, 0.07, 0.10) * smoothstep(0.35, 0.8, fbm(vec2(p.x * 2.0 + uTime * 0.02, y * 3.0))) * 0.5;
-  for (int i = 0; i < 3; i++) {
+// 依据馆藏：「肉体终结之后，大多数灵魂受到亡者世界牵引，成为亡灵。亡者世界由死亡法则统治，以寂静与终结为其性质。」
+// 一片无风的暗原：远处一道苍白的地平线，地平线下是一面完全静止的黑水，倒映着上面的一切（寂静）。
+// 一颗颗苍白的灵魂光点从高处缓缓落下，被牵引着汇向地平线上的同一处，越近越小、越淡，到那里熄灭（牵引与终结）。
+// 没有骷髅、墓碑之类的具体形象；肃穆，不恐怖。
+const float DH = 0.6; // 地平线在亡者世界内的位置（0–1，向下为正）
+vec3 deadSky(vec2 q){ // q.y：亡者世界内的纵坐标
+  float above = DH - q.y; // 距地平线的高度
+  vec3 col = mix(vec3(0.05, 0.042, 0.06), vec3(0.016, 0.013, 0.022), smoothstep(0.0, 0.7, above));
+  col += vec3(0.03, 0.022, 0.04) * smoothstep(0.3, 0.75, fbm(vec2(q.x * 0.8 - uTime * 0.006, q.y * 1.5))) * smoothstep(0.1, 0.6, above); // 高处几乎看不出的暗紫云层
+  // 极慢的低雾，贴着地平线
+  col += vec3(0.10, 0.09, 0.12) * smoothstep(0.42, 0.8, fbm(vec2(q.x * 1.6 + uTime * 0.012, q.y * 5.0))) * exp(-above * 5.0) * 0.6;
+  // 地平线上的苍白微光，汇聚处最亮
+  col += vec3(0.62, 0.64, 0.74) * exp(-pow(above * 26.0, 2.0)) * (0.10 + 0.22 * exp(-q.x * q.x * 6.0));
+  col += vec3(0.50, 0.50, 0.62) * exp(-above * 9.0 - q.x * q.x * 3.0) * 0.07;
+  // 灵魂：从高处落下，沿弧线汇向地平线上的一点
+  vec2 sink = vec2(0.0, DH);
+  for (int i = 0; i < 30; i++) {
     float fi = float(i);
-    float s = 34.0 - fi * 9.0;
-    vec2 q = vec2(p.x, y) * s + vec2(sin(y * 3.0 + fi) * 0.3, -uTime * (0.18 + fi * 0.1));
-    vec2 g = floor(q);
-    float on = step(0.92, h1(g + fi * 13.0));
-    float sz = 0.06 + fi * 0.03;
-    col += vec3(0.70, 0.66, 0.74) * on * smoothstep(sz, 0.0, length(fract(q) - 0.5)) * (0.25 + fi * 0.15);
+    float seed = fract(sin(fi * 91.7) * 4375.85);
+    float t = fract(uTime * (0.016 + 0.01 * seed) + seed * 7.0);
+    vec2 start = vec2((fract(seed * 13.7) - 0.5) * 2.4, -0.35 - 0.3 * fract(seed * 5.3));
+    float e = t * t * (3.0 - 2.0 * t);
+    vec2 pos = mix(start, sink, e);
+    pos.x += sin(t * 3.1416) * 0.12 * (fract(seed * 3.1) - 0.5); // 下落时略微偏离直线
+    vec2 dir = normalize(sink - start);
+    float size = mix(0.006, 0.0015, e);
+    float life = smoothstep(0.0, 0.12, t) * (1.0 - smoothstep(0.75, 1.0, t));
+    // 光点与身后一小段淡尾
+    vec2 d = q - pos;
+    float along = clamp(dot(d, -dir), 0.0, 0.05 * (1.0 - e));
+    float trail = exp(-dot(d + dir * along, d + dir * along) / (size * size * 1.5)) * (1.0 - along / 0.05) * 0.35;
+    float core = exp(-dot(d, d) / (size * size));
+    float glow = exp(-dot(d, d) / (size * size * 30.0)) * 0.12;
+    col += vec3(0.86, 0.85, 0.92) * (core + glow + trail) * life * (0.55 + 0.45 * seed);
   }
-  col += vec3(0.62, 0.66, 0.78) * exp(-pow((y - 4.82) * 7.0, 2.0)) * 0.12 * (1.0 - abs(p.x) * 0.5);
+  return col;
+}
+vec3 dead(vec2 p, float y){
+  float ly = y - 4.0;
+  vec3 col;
+  if (ly < DH) {
+    col = deadSky(vec2(p.x, ly));
+  } else {
+    // 静水：倒影上下颠倒、压暗，几乎不动；只有极轻的横向微漾
+    float depth = ly - DH;
+    vec2 r = vec2(p.x + sin(ly * 90.0 + uTime * 0.25) * 0.0012 * depth * 4.0, DH - depth);
+    col = deadSky(r) * mix(0.8, 0.3, smoothstep(0.0, 0.1, depth)) * exp(-depth * 1.8) + vec3(0.008, 0.007, 0.012);
+    col += vec3(0.62, 0.64, 0.74) * exp(-pow(depth * 60.0, 2.0)) * 0.05; // 水线
+  }
+  // 极稀的灰烬，缓慢下沉
+  vec2 aq = vec2(p.x, y) * 26.0 + vec2(sin(y * 3.0) * 0.3, -uTime * 0.12);
+  col += vec3(0.6, 0.58, 0.66) * step(0.95, h1(floor(aq))) * smoothstep(0.07, 0.0, length(fract(aq) - 0.5)) * 0.18;
   return col;
 }
 
