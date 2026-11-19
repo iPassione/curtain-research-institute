@@ -6,7 +6,7 @@
 // 设定依据：帷幕是透明、柔软、自带支撑的穹顶；没有魔力的凡人看不见其内部；内部面积略大于从外部估算的规模。
 // 因此从外面看时，薄膜只折射外面的海与天，内部的航海图只在镜头进入穹顶后才显现；穿过时视角撑开，表现「内部更大」。
 import {
-  AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, Color, FrontSide, HalfFloatType, Mesh, PerspectiveCamera,
+  AdditiveBlending, BackSide, NearestFilter, BufferAttribute, BufferGeometry, Color, FrontSide, HalfFloatType, Mesh, PerspectiveCamera,
   PlaneGeometry, Points, Raycaster, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Texture, TextureLoader, Vector2, Vector3, Vector4, WebGLRenderTarget,
 } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -105,7 +105,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       uDeep: { value: lin('#03100e') },
       uGlint: { value: lin('#fff2cf') },
       uWaves: { value: [new Vector4(1, 0.35, 0.16, 38), new Vector4(0.6, 1, 0.12, 22), new Vector4(-0.4, 1, 0.1, 13), new Vector4(1, -0.7, 0.08, 7)] },
-      uShallow: { value: lin('#2f6f66') }, uTerrain: { value: null as Texture | null }, uLandSize: { value: LAND }, uLandZ: { value: LAND_Z }, uLandOn: { value: 0 }, uCenters: { value: null as unknown }, uLift: { value: null as unknown },
+      uShallow: { value: lin('#2f6f66') }, uTerrain: { value: null as Texture | null }, uLandSize: { value: LAND }, uLandZ: { value: LAND_Z }, uLandOn: { value: 0 }, uRegions: { value: null as unknown }, uLift: { value: null as unknown },
     },
     vertexShader: seaVertex, fragmentShader: seaFragment,
   }));
@@ -149,7 +149,6 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   scene.add(membraneFar, membrane);
 
   // 穹顶之下的五大陆：按航海图派生的地形、林地、积雪与色调程序化地画出写实的地表（见 veil-shaders.ts）；两张数据图都载入后才显示。
-  const centers = places.length ? places.map(pl => new Vector2(pl.u / 100, 1 - pl.v / 100)) : Array.from({ length: 5 }, () => new Vector2(9, 9));
   const lifts = [0, 0, 0, 0, 0], liftVel = [0, 0, 0, 0, 0];
   const anyHot = { value: 0 };
   const octaves = { OCTAVES: tier === 'full' ? 5 : 3 };
@@ -160,10 +159,10 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     // 主光从东北侧斜照：镜头从南往北看时山体一侧亮、一侧落影，起伏最清楚；与天上月亮同在右侧
     uLight: { value: new Vector3(0.8, 0.4, -0.42).normalize() },
     uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
-    uCenters: { value: centers },
+    uRegions: { value: null as Texture | null },
     uLift: { value: lifts },
   };
-  (sea.material as ShaderMaterial).uniforms.uCenters.value = centers;
+  (sea.material as ShaderMaterial).uniforms.uRegions = landUniforms.uRegions;
   (sea.material as ShaderMaterial).uniforms.uLift.value = lifts;
   const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 384 : 200, tier === 'full' ? 384 : 200);
   landGeometry.rotateX(-Math.PI / 2);
@@ -189,7 +188,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   townGeometry.setAttribute('aSize', new BufferAttribute(new Float32Array(townSize), 1));
   townGeometry.setAttribute('aPhase', new BufferAttribute(new Float32Array(townPhase), 1));
   const townUniforms = {
-    uHeight: landUniforms.uHeight, uAmp: landUniforms.uAmp, uSize: landUniforms.uSize, uCenters: landUniforms.uCenters, uLift: landUniforms.uLift,
+    uHeight: landUniforms.uHeight, uAmp: landUniforms.uAmp, uSize: landUniforms.uSize, uRegions: landUniforms.uRegions, uLift: landUniforms.uLift,
     uTime: shared.uTime, uDpr: { value: 1 }, uBaseY: { value: LAND_Y }, uBaseZ: { value: LAND_Z }, uOn: { value: 0 },
   };
   const towns = new Points(townGeometry, new ShaderMaterial({
@@ -215,7 +214,25 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   });
   let disposed = false, loaded = 0;
   const loader = new TextureLoader();
-  const done = () => { if (++loaded === 2) landUniforms.uReady.value = 1; };
+  const done = () => { if (++loaded === 3) landUniforms.uReady.value = 1; };
+  const regionIds = new Uint8Array(256 * 256).fill(255); // 拾取用：每处属于哪块大陆
+  loader.load('assets/data/nautical-regions.png', tex => {
+    if (disposed) { tex.dispose(); return; }
+    tex.magFilter = tex.minFilter = NearestFilter;
+    tex.generateMipmaps = false;
+    landUniforms.uRegions.value = tex;
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      if (g) {
+        g.imageSmoothingEnabled = false;
+        g.drawImage(tex.image as CanvasImageSource, 0, 0, 256, 256);
+        const px = g.getImageData(0, 0, 256, 256).data;
+        for (let i = 0; i < 256 * 256; i++) regionIds[i] = Math.round(px[i * 4] / 60);
+      }
+    } catch { /* 读不到像素时退回按最近中心判断 */ }
+    done();
+  });
   loader.load('assets/data/nautical-tint.png', tex => {
     if (disposed) { tex.dispose(); return; }
     tex.colorSpace = SRGBColorSpace;
@@ -377,6 +394,8 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       if (hitP.y <= LAND_Y + h * LAND_AMP) {
         if (h < 0.03) return -1;
         const u = hitP.x / LAND + 0.5, v = (hitP.z - LAND_Z) / LAND + 0.5;
+        const id = regionIds[Math.min(255, Math.floor(v * 256)) * 256 + Math.min(255, Math.floor(u * 256))];
+        if (id < places.length) return id;
         let best = -1, bd = Infinity;
         places.forEach((pl, k) => { const d = Math.hypot(u - pl.u / 100, v - pl.v / 100); if (d < bd) { bd = d; best = k; } });
         return best;
@@ -437,7 +456,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       // 不在第四幕时清掉内联样式（CSS 默认透明），页面结构不随渲染时机变化。
       if (placesAlpha < 0.01) { if (el.hasAttribute('style')) el.removeAttribute('style'); continue; }
       projected.copy(placeWorld[i]);
-      projected.y += lifts[i] * 2.8; // 地名跟着大陆一起抬起
+      projected.y += lifts[i] * 3.2 * 0.8; // 地名跟着大陆一起抬起
       projected.project(camera);
       // 地名不出屏：窄屏上东西两侧的大陆只露出一部分，地名收在屏内 16px 处
       const half = el.offsetWidth / 2 + 16;

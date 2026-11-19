@@ -71,10 +71,10 @@ ${NOISE}
 uniform vec3 uDeep, uGlint, uShallow;
 uniform float uTime, uLandSize, uLandZ, uLandOn;
 uniform sampler2D uTerrain;
-uniform vec2 uCenters[5];
+uniform sampler2D uRegions;
 uniform float uLift[5];
 varying vec3 vWorld;
-float seaLift(vec2 uv){ float best = 1e9, l = 0.0; for (int i = 0; i < 5; i++) { float d = distance(uv, uCenters[i]); if (d < best) { best = d; l = uLift[i]; } } return l; }
+float seaLift(vec2 uv){ float id = floor(texture2D(uRegions, uv).r * 255.0 / 60.0 + 0.5), l = 0.0; for (int i = 0; i < 5; i++) if (float(i) == id) l = uLift[i]; return l; }
 varying vec3 vNormalW;
 void main(){
   vec3 N = normalize(vNormalW);
@@ -280,7 +280,7 @@ void main(){
 export const TERRAIN = /* glsl */ `
 uniform sampler2D uHeight; // R 高度 G 林地 B 积雪
 uniform float uAmp, uSize;
-uniform vec2 uCenters[5];
+uniform sampler2D uRegions; // 每处属于哪块大陆：序号 × 60
 uniform float uLift[5];
 float th(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float tn(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
@@ -292,10 +292,12 @@ float ridged(vec2 p){ float s = 0.0, a = 0.55, w = 1.0;
   for (int i = 0; i < OCTAVES; i++) { float n = 1.0 - abs(tn(p) * 2.0 - 1.0); n *= n; s += n * a * w; w = clamp(n * 1.8, 0.0, 1.0); p = ROT * p; a *= 0.5; }
   return s; }
 float liftAt(vec2 uv){
-  float best = 1e9, lift = 0.0;
-  for (int i = 0; i < 5; i++) { float d = distance(uv, uCenters[i]); if (d < best) { best = d; lift = uLift[i]; } }
+  float id = floor(texture2D(uRegions, uv).r * 255.0 / 60.0 + 0.5), lift = 0.0;
+  for (int i = 0; i < 5; i++) if (float(i) == id) lift = uLift[i];
   return lift;
 }
+// 抬起的幅度随地势增加：海岸留在水边，整块大陆向上隆起，不会拉出竖直的「裙边」
+float liftShape(float h){ return smoothstep(0.0, 0.4, h); }
 // 地面高度（相对陆地基准，世界单位）
 float elevation(vec2 uv, vec3 m){
   float h = m.r;
@@ -325,7 +327,7 @@ void main(){
   vec3 m = texture2D(uHeight, uv).rgb;
   vLift = liftAt(uv);
   vec3 p = position;
-  p.y += elevation(uv, m) + vLift * 2.8 * smoothstep(0.004, 0.06, m.r);
+  p.y += elevation(uv, m) + vLift * 3.2 * liftShape(m.r);
   vec4 w = modelMatrix * vec4(p, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
@@ -405,8 +407,8 @@ void main(){
   // 选中：其余大陆暗下去；这一块被暖金色的光照亮，海岸金边
   col *= 1.0 - 0.42 * uAnyHot * (1.0 - vLift);
   vec3 warmDir = normalize(vec3(-0.35, 0.75, 0.55));
-  col += alb * vec3(1.0, 0.72, 0.38) * vLift * (0.9 * max(dot(N, warmDir), 0.0) + 0.2);
-  col += uGold * vLift * (shore * 2.4 + (1.0 - smoothstep(0.012, 0.1, h)) * 0.5);
+  col += alb * vec3(1.0, 0.72, 0.38) * vLift * (0.85 * pow(max(dot(N, warmDir), 0.0), 1.6) + 0.06);
+  col += uGold * vLift * (shore * 1.8 + (1.0 - smoothstep(0.012, 0.1, h)) * 0.4);
   // 低处的薄雾，缓缓流动
   // 低处的薄雾：只在山间低地，一缕一缕地流动
   float mist = (1.0 - smoothstep(0.3, 2.0, vWorld.y - uBaseY)) * smoothstep(0.45, 0.75, fbm(w * 0.09 + uTime * vec2(0.02, 0.008))) * smoothstep(0.06, 0.2, h);
@@ -427,7 +429,7 @@ void main(){
   vec2 uv = position.xz;
   vec3 m = texture2D(uHeight, uv).rgb;
   float lift = liftAt(uv);
-  vec3 p = vec3((uv.x - 0.5) * uSize, uBaseY + elevation(uv, m) + lift * 2.8 + 0.18, (0.5 - uv.y) * uSize + uBaseZ);
+  vec3 p = vec3((uv.x - 0.5) * uSize, uBaseY + elevation(uv, m) + lift * 3.2 * liftShape(m.r) + 0.18, (0.5 - uv.y) * uSize + uBaseZ);
   vec4 mv = viewMatrix * vec4(p, 1.0);
   float flick = 0.75 + 0.25 * sin(uTime * (1.3 + aPhase * 2.1) + aPhase * 37.0);
   vGlow = flick * (1.0 + lift * 1.6);

@@ -9,6 +9,7 @@
 #   4. 地表：林地（偏绿的深色笔触）、积雪（低饱和的亮白），模糊成连片的分布；城镇取红屋顶聚成的团块。
 #   输出：
 #     nautical-terrain.webp 1024² RGB（无损 WebP）：R 高度（黑为海面）、G 林地、B 积雪
+#     nautical-regions.png  256² 灰度：每处属于哪块大陆（序号 × 60），供选中时整块抬起
 #     nautical-tint.png     256² RGB：陆地的整体色调（中值滤波去掉笔触后再模糊，海上延伸最近陆地的颜色）
 #     src/gl/scenes/terrain-towns.ts  城镇灯火的位置与大小（图上百分比）
 import numpy as np
@@ -18,6 +19,7 @@ from scipy import ndimage as nd
 SRC = 'assets-src/nautical-chart.png'
 OUT = 'assets-src/data/nautical-terrain.webp'
 TINT = 'assets-src/data/nautical-tint.png'
+REGIONS = 'assets-src/data/nautical-regions.png'
 TOWNS = 'src/gl/scenes/terrain-towns.ts'
 N = 1024
 
@@ -86,6 +88,15 @@ _, (iy, ix) = nd.distance_transform_edt(~land, return_indices=True)
 filled = med[iy, ix]
 tint = np.dstack([nd.gaussian_filter(filled[..., k], 6) for k in range(3)])
 Image.fromarray((tint * 255).round().astype('uint8'), 'RGB').resize((256, 256), Image.LANCZOS).save(TINT, optimize=True)
+
+# 大陆分区：每块陆地（连通区域）归到离它最近的大陆中心，海上延伸最近的陆地；值 = 序号 × 60（顺序同 manifest.regions）
+CENTERS = [(.5, .5), (.29, .29), (.71, .29), (.29, .71), (.71, .71)]
+lab, n = nd.label(land)
+region_id = np.zeros((N, N), np.uint8)
+for k, (cy, cx) in enumerate(nd.center_of_mass(land, lab, range(1, n + 1))):
+    region_id[lab == k + 1] = int(np.argmin([np.hypot(cx / N - u, cy / N - v) for u, v in CENTERS]))
+region_id = region_id[iy, ix]  # 海上取最近陆地所属的大陆
+Image.fromarray(region_id * 60, 'L').resize((256, 256), Image.NEAREST).save(REGIONS, optimize=True)
 
 # 城镇：红屋顶聚成的团块
 red = (r > 0.42) & (r - g > 0.22) & (r - b > 0.25) & (sat > 0.45) & inner
