@@ -86,3 +86,20 @@ test('旅行案头：小航海图按路线画出海路、界门或原地出行',
   await expect(page.locator('.travel-chart .route-loop')).toHaveCount(1);
   await expect(page.locator('.travel-chart .route-to')).toHaveCount(0);
 });
+
+test('造物陈列室：手机上放大结构图版时按原大显示，可左右滑动；插画仍按屏宽缩放', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?page=exhibits&object=gate');
+  await page.locator('.object-zoom').click();
+  const dialog = page.locator('.object-lightbox');
+  await expect(dialog).toBeVisible();
+  expect(await dialog.locator('img').evaluate(i => i.clientWidth)).toBeLessThanOrEqual(390);
+  await expect(dialog.locator('.object-lightbox-hint')).toBeHidden();
+  await page.locator('.object-close').click();
+  await page.getByRole('button', { name: '结构图版' }).click();
+  await expect(page.locator('.painted-portrait')).toHaveAttribute('src', /plates\/gate\.svg$/);
+  await page.locator('.object-zoom').click();
+  await expect(dialog.locator('.object-lightbox-hint')).toBeVisible();
+  expect(await dialog.locator('img').evaluate(i => i.clientWidth)).toBe(900);
+  expect(await dialog.evaluate(d => d.scrollWidth > d.clientWidth)).toBe(true);
+});

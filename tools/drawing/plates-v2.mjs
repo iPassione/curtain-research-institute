@@ -1,4 +1,4 @@
-// 器物结构图版 V2（现代短杖、封咒蕴法石、界门）：node tools/drawing/plates-v2.mjs
+// 器物结构图版 V2（造物陈列室的六张）：node tools/drawing/plates-v2.mjs [输出目录]，ONLY=wand,lamp 只生成其中几张
 // 设计依据见 docs/专题/器物图版V2.md：每一处标注都来自知识库或公开馆藏里写明的设定，不标尺寸、不编机制。
 // 不依赖第三方库，直接输出 SVG。版式 900×1125（4:5，与藏品插画同比例），沿用旧图版的研究所档案格式。
 import fs from 'node:fs';
@@ -233,6 +233,160 @@ function gate() {
   return s + '</svg>';
 }
 
+// ———————————————————————— 古式长杖 ————————————————————————
+function staff() {
+  let s = frame({ title: '古式长杖', number: '02', keywords: 'WOOD / LONG CONDUIT / RESONANCE / OPEN GROUND' });
+  // 主视图：一整根带天然弯曲的木杖，杖首一团木瘤；中线沿一条缓慢起伏的曲线
+  const top = 175, bot = 940, L = bot - top;
+  const cxAt = t => 270 + Math.sin(t * 5.2 + 0.4) * 9 + Math.sin(t * 13 + 1) * 3 - t * 18;
+  const half = t => 5.2 + 3.2 * t + (Math.sin(t * 37) * 0.5 + 0.5) * 1.6 * (t > 0.08 ? 1 : 0) + (t < 0.07 ? 6 * Math.sin((t / 0.07) * Math.PI) : 0);
+  const N = 180, P = [];
+  for (let i = 0; i <= N; i++) { const t = i / N; P.push([t, cxAt(t), top + t * L]); }
+  const left = P.map(([t, x, y]) => `${f(x - half(t))} ${f(y)}`), right = P.map(([t, x, y]) => `${f(x + half(t))} ${f(y)}`).reverse();
+  s += path(`M${left.join('L')}Q${f(cxAt(1))} ${bot + 12} ${right[0]}L${right.join('L')}Q${f(cxAt(0))} ${top - 14} ${left[0]}Z`, { fill: '#e6dfca', stroke: C.ink, w: 1.4 });
+  // 木纹：随枝干扭转的细线
+  for (const k of [-0.55, -0.15, 0.3, 0.65]) {
+    const d = P.filter((_, i) => i % 3 === 0).map(([t, x, y], i) => `${i ? 'L' : 'M'}${f(x + half(t) * (k + Math.sin(t * 22 + k * 4) * 0.25))} ${f(y)}`).join('');
+    s += path(d, { stroke: C.brass, w: 0.7, op: 0.75 });
+  }
+  // 木瘤与几处节疤
+  s += `<ellipse cx="${f(cxAt(0.03) - 1)}" cy="${top + 18}" rx="7" ry="11" fill="none" stroke="${C.brass}" stroke-width=".8"/>`;
+  for (const t of [0.31, 0.56, 0.79]) s += `<ellipse cx="${f(cxAt(t) + 2)}" cy="${f(top + t * L)}" rx="3" ry="6" fill="none" stroke="${C.brass}" stroke-width=".8"/>`;
+  // 共鸣：沿杖身的几道细弧，表示较长路径上的自然共鸣
+  for (let i = 0; i < 6; i++) { const t = 0.12 + i * 0.1, y = top + t * L, x = cxAt(t); s += path(`M${f(x + 18)} ${f(y - 12)}Q${f(x + 30)} ${f(y)} ${f(x + 18)} ${f(y + 12)}`, { stroke: C.brassLight, w: 0.8, op: 0.8 }); }
+  // 左侧括注
+  for (const [a, b, t1, t2] of [[0, 0.07, '杖首', '力量由此导出'], [0.07, 0.72, '杖身', '较长的导出路径'], [0.74, 1, '握部', '握持的位置']]) {
+    const y1 = top + a * L + 3, y2 = top + b * L - 3, xm = 160;
+    s += path(`M${xm + 10} ${f(y1)}L${xm} ${f(y1)}L${xm} ${f(y2)}L${xm + 10} ${f(y2)}`, { stroke: C.brass, w: 0.9 });
+    s += text(xm - 10, (y1 + y2) / 2 - 2, t1, { size: 15, anchor: 'end' }) + text(xm - 10, (y1 + y2) / 2 + 16, t2, { size: 11, anchor: 'end', fill: C.note });
+  }
+  s += callout(cxAt(0.42) + 30, top + 0.42 * L, 360, 470, '自然共鸣', '路径越长，共鸣越强');
+  s += callout(cxAt(0.56) + 4, top + 0.56 * L, 360, 640, '天然节疤', '一整根木料，不加镶嵌');
+  s += text(300, 985, '正面形制（示意）', { size: 12, anchor: 'middle', fill: C.note });
+
+  // 右栏
+  s += note(1, 180, '导出路径较长', '与短杖相比，只比相对长短');
+  s += line(655, 222, 655, 360, { stroke: C.ink, w: 3.2 }) + line(735, 300, 735, 360, { stroke: C.ink, w: 2.2 });
+  for (let i = 0; i < 4; i++) s += path(`M${667} ${236 + i * 30}q10 8 0 16`, { stroke: C.brassLight, w: 0.9 });
+  s += path('M747 314q8 7 0 14', { stroke: C.brassLight, w: 0.9 });
+  s += text(655, 378, '长杖', { size: 11, anchor: 'middle' }) + text(735, 378, '短杖', { size: 11, anchor: 'middle' });
+  s += text(690, 250, '共鸣更强', { size: 11, fill: C.note }) + text(690, 266, '宜远距离引导', { size: 11, fill: C.note });
+  s += note(2, 420, '开阔地与狭巷', '需要距离，也需要时间');
+  s += line(640, 500, 845, 500, { stroke: C.faint, w: 0.8 }) + circle(650, 490, 4, { fill: C.ink, stroke: C.ink }) + line(650, 494, 650, 470, { stroke: C.ink, w: 1.6 });
+  s += path('M660 488C720 440 790 440 836 488', { stroke: C.brass, w: 1, dash: '4 3' }) + circle(838, 492, 4, { stroke: C.ink });
+  s += text(838, 512, '远处的目标', { size: 10, anchor: 'end', fill: C.note });
+  s += rect(640, 522, 205, 10, { stroke: C.brass, w: 0.8, fill: 'url(#h-brass)' }) + text(632, 545, '吟唱与引导的时间较长', { size: 11, fill: C.note });
+  s += line(700, 562, 700, 600, { stroke: C.line, w: 2 }) + line(760, 562, 760, 600, { stroke: C.line, w: 2 }) + line(730, 568, 730, 598, { stroke: C.ink, w: 1.6 }) + path('M714 582L722 576M738 576L746 582', { stroke: '#8a4b3a', w: 1 });
+  s += text(780, 586, '狭巷里转身', { size: 11, fill: C.note }) + text(780, 602, '要顾及墙壁', { size: 11, fill: C.note });
+  s += note(3, 650, '多人协作', '彼此等待，完成引导');
+  for (let i = 0; i < 4; i++) { const x = 650 + i * 26, y = 720 - Math.abs(i - 1.5) * 8; s += circle(x, y - 14, 4, { stroke: C.ink, w: 1 }) + line(x, y - 9, x, y + 8, { stroke: C.ink, w: 1.2 }) + line(x + 5, y + 6, x + 5, y - 22, { stroke: C.ink, w: 1.4 }); s += path(`M${x + 5} ${y - 24}Q${780} ${690} 830 ${700}`, { stroke: C.brassLight, w: 0.7, op: 0.8 }); }
+  s += circle(834, 700, 6, { stroke: C.brass, fill: 'url(#h-brass)' });
+  s += text(632, 752, '大型法术常由数名巫师合力完成；', { size: 11, fill: C.note }) + text(632, 768, '有人中途失去引导能力，其余人要重新判断。', { size: 11, fill: C.note });
+  s += note(4, 820, '回路负担较重', '威力不是免费的');
+  s += text(640, 868, '古代魔法', { size: 11 }) + rect(700, 858, 140, 12, { stroke: C.line, w: 0.8 }) + rect(700, 858, 126, 12, { stroke: 'none', fill: 'url(#h-brass)' });
+  s += text(640, 892, '现代咒语', { size: 11 }) + rect(700, 882, 140, 12, { stroke: C.line, w: 0.8 }) + rect(700, 882, 46, 12, { stroke: 'none', fill: 'url(#h-brass)' });
+  s += text(632, 918, '负荷过大可能损伤回路、使施法能力衰退。', { size: 11, fill: C.note }) + text(632, 934, '（只示意相对轻重）', { size: 11, fill: C.note });
+  return s + '</svg>';
+}
+
+// ———————————————————————— 用过的蕴法石 ————————————————————————
+function spent() {
+  const shape = 'M215 300L330 205L420 245L432 470L395 640L250 690L180 600L170 420Z';
+  let s = frame({ title: '用过的蕴法石', number: '04', keywords: 'RELEASED / RESIDUAL STRUCTURE / SORTING / SECOND TRADE', defs: `<clipPath id="spentc"><path d="${shape}"/></clipPath>` });
+  // 主视图：不规则原石，内部的格已经空了，格壁留下淡淡的残余；表面有裂隙与碎片
+  s += path(shape, { fill: '#ddd8c4', stroke: C.ink, w: 1.5 });
+  let cells = '';
+  for (let gy = 0; gy < 11; gy++) for (let gx = 0; gx < 7; gx++) {
+    const x = 165 + gx * 40 + (gy % 2) * 20, y = 200 + gy * 46;
+    cells += rect(x, y, 32, 38, { stroke: C.faint, w: 0.6, dash: '2 2', op: 0.8 });
+    if ((gx * 7 + gy * 3) % 5 === 0) cells += path(`M${x + 4} ${y + 30}C${x + 12} ${y + 18} ${x + 20} ${y + 26} ${x + 28} ${y + 8}`, { stroke: C.teal, w: 0.7, op: 0.6 });
+  }
+  s += `<g clip-path="url(#spentc)">${cells}<rect x="160" y="200" width="290" height="500" fill="url(#h-ink)" opacity=".35"/></g>`;
+  s += path('M330 205L318 300L250 380L262 470M318 300L400 360L392 470M262 470L320 560L300 650', { stroke: C.line, w: 1, op: 0.7 });
+  s += path(shape, { stroke: C.ink, w: 1.5 });
+  // 碎片
+  s += path('M440 690L462 676L470 698Z', { fill: '#ddd8c4', stroke: C.ink, w: 1 }) + path('M150 700L166 692L170 708L156 710Z', { fill: '#ddd8c4', stroke: C.ink, w: 1 });
+  s += line(120, 712, 500, 712, { stroke: C.faint, w: 0.8 });
+  s += callout(300, 330, 455, 250, '已释放的格', '空了，不能再填咒');
+  s += callout(268, 470, 455, 420, '结构残余', '承载魔法后已改变');
+  s += callout(392, 470, 455, 560, '表面裂隙', '');
+  s += callout(462, 690, 455, 660, '掉落的碎片', '');
+  s += text(300, 760, '正面形制（示意）', { size: 12, anchor: 'middle', fill: C.note });
+  // 下方：分拣标签
+  s += text(60, 830, '回收时附上的分拣签', { size: 15 });
+  s += path('M70 850L300 850L320 875L300 900L70 900Z', { stroke: C.brass, w: 1, fill: '#e8dfc4' }) + circle(296, 875, 4, { stroke: C.brass });
+  s += text(82, 870, '曾承载的咒语：', { size: 12, fill: C.note }) + line(170, 872, 280, 872, { stroke: C.brass, w: 0.7, dash: '2 2' });
+  s += text(82, 892, '预备送去：', { size: 12, fill: C.note }) + line(146, 894, 280, 894, { stroke: C.brass, w: 0.7, dash: '2 2' });
+  s += text(340, 870, '有清楚记录的废石，', { size: 11, fill: C.note }) + text(340, 886, '更容易找到合适的买家。', { size: 11, fill: C.note });
+
+  // 右栏
+  s += note(1, 180, '不能再填咒', '一次性，这是它和造物的分别');
+  s += path('M650 230L710 222L718 280L656 290Z', { fill: '#ddd8c4', stroke: C.ink, w: 1 }) + arrow(760, 256, 724, 256, { stroke: C.brass, w: 1, head: 5 }) + text(800, 260, '再次填充', { size: 11, anchor: 'middle', fill: C.note });
+  s += line(730, 244, 750, 268, { stroke: '#8a4b3a', w: 1.4 }) + line(750, 244, 730, 268, { stroke: '#8a4b3a', w: 1.4 });
+  s += text(632, 318, '已经用过的部分不能重新封入咒语。', { size: 11, fill: C.note });
+  s += note(2, 370, '三种去向', '按它曾承载的咒语与性质');
+  const go = [['建材', '曾承载防御咒语者', '可提供被动防护'], ['研磨料', '加工某些', '铸造魔法所用的工具'], ['炼金原料', '少量交易', '用于特定配方']];
+  go.forEach(([a, b, c], i) => { const y = 410 + i * 62; s += rect(640, y, 70, 46, { stroke: C.brass, w: 1 }) + text(675, y + 28, a, { size: 13, anchor: 'middle' }) + text(722, y + 20, b, { size: 11, fill: C.note }) + text(722, y + 36, c, { size: 11, fill: C.note }); });
+  s += note(3, 630, '小规模的二级市场', '养活一小批中间商');
+  [['工坊', 640], ['收料者', 712], ['用料的人', 790]].forEach(([n, x], i) => { s += rect(x - 4, 670, n.length * 14 + 12, 28, { stroke: C.line, w: 0.9 }) + text(x + 2 + n.length * 7, 689, n, { size: 12, anchor: 'middle' }); if (i < 2) s += arrow(x + n.length * 14 + 10, 684, x + n.length * 14 + 24, 684, { stroke: C.brass, w: 0.9, head: 4 }); });
+  s += text(632, 724, '送新石的人来时，也可能带走墙边积攒的旧料。', { size: 11, fill: C.note });
+  s += note(4, 780, '问清来历', '收料前的两件事');
+  s += text(640, 828, '一  它曾经承载什么咒语', { size: 12 }) + text(640, 852, '二  预备送到哪里去', { size: 12 });
+  s += text(632, 884, '建筑者要核对材料是否适合预定部位；', { size: 11, fill: C.note }) + text(632, 900, '说不清来历的废石，只能卖给要求较低的买家。', { size: 11, fill: C.note });
+  return s + '</svg>';
+}
+
+// ———————————————————————— 日用造物灯 ————————————————————————
+function lamp() {
+  let s = frame({ title: '一盏日用造物灯', number: '05', keywords: 'ARTEFACT / SHAPED MAGIC / AFFINITY / NATURAL RECOVERY' });
+  const cx = 290;
+  // 顶饰与灯帽
+  s += path(`M${cx} 170C${cx - 9} 182 ${cx - 9} 196 ${cx} 202C${cx + 9} 196 ${cx + 9} 182 ${cx} 170Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.2 });
+  s += path(`M${cx - 14} 214L${cx + 14} 214L${cx + 8} 202L${cx - 8} 202Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  s += path(`M${cx - 88} 262C${cx - 70} 228 ${cx + 70} 228 ${cx + 88} 262Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.3 }) + rect(cx - 94, 262, 188, 10, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  // 玻璃灯罩与肋框；中间一圈光
+  s += `<ellipse cx="${cx}" cy="350" rx="98" ry="80" fill="#efe6c9" stroke="${C.ink}" stroke-width="1.3"/>`;
+  s += circle(cx, 352, 26, { stroke: C.brassLight, w: 1, fill: '#f3e3b0' }) + circle(cx, 352, 44, { stroke: C.brassLight, w: 0.6, dash: '2 3' }) + circle(cx, 352, 62, { stroke: C.brassLight, w: 0.5, dash: '1 4' });
+  for (const k of [-0.82, -0.45, 0, 0.45, 0.82]) s += path(`M${f(cx + k * 98 * 0.9)} 276Q${f(cx + k * 98 * 1.12)} 350 ${f(cx + k * 98 * 0.9)} 424`, { stroke: C.line, w: 1 });
+  s += rect(cx - 82, 424, 164, 10, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  // 莲瓣托
+  for (let i = -3; i <= 3; i++) s += path(`M${cx + i * 18 - 10} 452C${cx + i * 18 - 8} 438 ${cx + i * 18 + 8} 438 ${cx + i * 18 + 10} 452Z`, { fill: '#e2d6b6', stroke: C.ink, w: 0.9 });
+  s += path(`M${cx - 70} 452L${cx + 70} 452L${cx + 40} 470L${cx - 40} 470Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  // 灯柱与节
+  s += rect(cx - 7, 470, 14, 250, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  for (const y of [520, 600, 680]) s += `<ellipse cx="${cx}" cy="${y}" rx="15" ry="9" fill="#e2d6b6" stroke="${C.ink}" stroke-width="1.1"/>`;
+  // 底座
+  s += path(`M${cx - 20} 720L${cx + 20} 720L${cx + 34} 760L${cx - 34} 760Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.1 });
+  s += path(`M${cx - 34} 760C${cx - 90} 770 ${cx - 120} 790 ${cx - 122} 812L${cx + 122} 812C${cx + 120} 790 ${cx + 90} 770 ${cx + 34} 760Z`, { fill: '#e2d6b6', stroke: C.ink, w: 1.3 });
+  s += rect(cx - 130, 812, 260, 16, { fill: '#e2d6b6', stroke: C.ink, w: 1.2 });
+  for (let i = 0; i < 9; i++) s += path(`M${cx - 96 + i * 24} 798q6 -8 12 0`, { stroke: C.brass, w: 0.8 });
+  s += line(110, 828, 480, 828, { stroke: C.faint, w: 0.8 });
+  s += callout(cx + 26, 352, 420, 300, '灯罩', '照明的效果在这里出现');
+  s += callout(cx + 12, 600, 420, 560, '器身', '整件器物保存已塑形的');
+  s += text(420, 596, '魔力与塑形方式', { size: 11, fill: C.note });
+  s += callout(cx - 100, 800, 110, 700, '底座', '', 'left') + text(110, 720, '主人会把它从', { size: 11, anchor: 'end', fill: C.note }) + text(110, 736, '书桌搬到柜台', { size: 11, anchor: 'end', fill: C.note });
+  s += text(cx, 870, '正面形制（示意）', { size: 12, anchor: 'middle', fill: C.note });
+  s += text(60, 920, '巫师造物：属于安全范畴，可在市场上自由流通。', { size: 12, fill: C.note }) + text(60, 940, '本件是据造物性质拟写的生活样本。', { size: 12, fill: C.note });
+
+  // 右栏
+  s += note(1, 180, '造物与蕴法石', '保存的东西不同');
+  const rows = [['', '造物', '蕴法石'], ['保存', '已塑形的魔力', '完整的咒语'], ['效果', '可重复使用', '单次释放'], ['用过以后', '慢慢自然恢复', '不能再填']];
+  rows.forEach((r, i) => { const y = 222 + i * 26; s += line(632, y + 8, 850, y + 8, { stroke: C.soft, w: 0.8 }); r.forEach((c, j) => { s += text([636, 700, 785][j], y, c, { size: 11, fill: i === 0 || j === 0 ? C.note : C.ink }); }); });
+  s += note(2, 360, '契合度', '同一盏灯，在不同人手里');
+  [0.95, 0.65, 0.38].forEach((k, i) => { const x = 665 + i * 72; s += circle(x, 420, 10, { stroke: C.brassLight, fill: '#f3e3b0' }) + circle(x, 420, 10 + 22 * k, { stroke: C.brassLight, w: 0.7, dash: '2 3' }) + path(`M${x - 10} 470q10 -12 20 0`, { stroke: C.line, w: 1 }) + line(x, 458, x, 446, { stroke: C.line, w: 1 }); });
+  s += text(632, 500, '材料、灌注时的魔力流与使用者的回路特性', { size: 11, fill: C.note }) + text(632, 516, '共同决定能效；没有魔力的人也能使用。', { size: 11, fill: C.note });
+  s += note(3, 570, '慢慢恢复', '从自然魔力中缓慢提取');
+  s += line(640, 680, 845, 680, { stroke: C.faint, w: 0.8 }) + line(640, 680, 640, 610, { stroke: C.faint, w: 0.8 });
+  s += path('M640 615L700 618L716 668L760 650L800 632L845 622', { stroke: C.brass, w: 1.2 });
+  s += text(690, 700, '使用', { size: 10, anchor: 'middle', fill: C.note }) + text(790, 700, '等待恢复', { size: 10, anchor: 'middle', fill: C.note }) + text(606, 640, '储备', { size: 10, fill: C.note });
+  s += text(632, 724, '只示意趋势，不标时间。', { size: 11, fill: C.note });
+  s += note(4, 780, '人为补充的条件', '通常只有原灌注者能做到');
+  s += text(640, 828, '一  必须是初步塑形的魔力', { size: 12 }) + text(640, 852, '二  魔力流与造物内部一致', { size: 12 });
+  s += text(632, 884, '日用器物的主人多半靠自然恢复，', { size: 11, fill: C.note }) + text(632, 900, '在使用与等待之间安排工作。', { size: 11, fill: C.note });
+  return s + '</svg>';
+}
+
 const out = process.argv[2] || 'assets-src/plates';
 fs.mkdirSync(out, { recursive: true });
-for (const [k, fn] of [['wand', wand], ['stone', stone], ['gate', gate]]) { fs.writeFileSync(`${out}/${k}.svg`, fn()); console.log(`${out}/${k}.svg`); }
+const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
+for (const [k, fn] of [['wand', wand], ['staff', staff], ['stone', stone], ['spent', spent], ['lamp', lamp], ['gate', gate]].filter(([k]) => !only || only.includes(k))) { fs.writeFileSync(`${out}/${k}.svg`, fn()); console.log(`${out}/${k}.svg`); }

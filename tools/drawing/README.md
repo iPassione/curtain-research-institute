@@ -39,7 +39,7 @@ pwsh -File .\tools\drawing\restore-tools.ps1 -NpmPath 'D:\你的Node目录\npm.c
 
 重建图版：
 
-> **2026-11-18 起**：现代短杖、封咒蕴法石、界门三张图版改由 `node tools/drawing/plates-v2.mjs` 生成（不依赖第三方库，900×1125），设计依据见 `docs/专题/器物图版V2.md`。下面的旧脚本仍生成其余三张；**不要再用它重建这三张**，否则会覆盖 V2。
+> **2026-11-19 起**：六张结构图版全部改由 `node tools/drawing/plates-v2.mjs` 生成（不依赖第三方库，900×1125），设计依据见 `docs/专题/器物图版V2.md`。下面的旧脚本已不再使用，**不要再运行它**，否则会覆盖 V2 图版。
 
 ```powershell
 node .\tools\drawing\build-plates.cjs
