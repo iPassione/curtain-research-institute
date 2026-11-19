@@ -36,9 +36,10 @@ export interface VeilScene extends GLScene { setProgress(p: number, immediate?: 
 export interface ChartPlace { el: HTMLElement; u: number; v: number }
 
 const INNER = 1.3; // 进入后穹顶扩大到外面看到的 1.3 倍：「内部面积略大于从外部估算的规模」
-const LAND = 2 * R * INNER * 0.9; // 陆地图边长：铺到帷幕边缘
-const LAND_AMP = 3.4; // 陆地最高处
-const LAND_Y = -0.6; // 陆地基准略低于海面，海岸自然没入浪里
+const LAND = 2 * R * INNER * 0.8; // 陆地图边长：大陆外围留一圈海，再到帷幕的内壁
+const LAND_AMP = 6.2; // 陆地最高处（约为图宽的 5%，斜俯视时山体立得住，又不至于拉花贴图）
+const LAND_Y = -0.45; // 陆地基准略低于海面，海岸自然没入浪里
+const LAND_Z = -12; // 陆地图整体往北挪：镜头在穹顶内能退得更远，五块大陆都收进斜俯视的画面
 
 export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places: ChartPlace[] = []): VeilScene {
   let tier = startTier;
@@ -103,6 +104,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       uDeep: { value: lin('#03100e') },
       uGlint: { value: lin('#fff2cf') },
       uWaves: { value: [new Vector4(1, 0.35, 0.16, 38), new Vector4(0.6, 1, 0.12, 22), new Vector4(-0.4, 1, 0.1, 13), new Vector4(1, -0.7, 0.08, 7)] },
+      uShallow: { value: lin('#2f6f66') }, uTerrain: { value: null as Texture | null }, uLandSize: { value: LAND }, uLandZ: { value: LAND_Z }, uLandOn: { value: 0 },
     },
     vertexShader: seaVertex, fragmentShader: seaFragment,
   }));
@@ -147,14 +149,16 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
 
   // 穹顶之下的五大陆：地理馆浮雕同一张高度图隆起成地形，颜色取航海图上陆地的部分；两张图都载入后才显示。
   const landUniforms = {
-    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 512, 1 / 512) },
-    uAmp: { value: LAND_AMP }, uSize: { value: LAND }, uInside: shared.uInside, uReady: { value: 0 },
-    uMoonDir: shared.uMoonDir, uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
+    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 1024, 1 / 1024) },
+    uAmp: { value: LAND_AMP }, uSize: { value: LAND }, uInside: shared.uInside, uReady: { value: 0 }, uShadow: { value: 0 },
+    // 主光从东北侧斜照：镜头从南往北看时山体一侧亮、一侧落影，起伏最清楚；与天上月亮同在右侧
+    uLight: { value: new Vector3(0.78, 0.5, -0.38).normalize() },
+    uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
   };
-  const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 300 : 160, tier === 'full' ? 300 : 160);
+  const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 384 : 200, tier === 'full' ? 384 : 200);
   landGeometry.rotateX(-Math.PI / 2);
   const chart = new Mesh(landGeometry, new ShaderMaterial({ uniforms: landUniforms, vertexShader: landVertex, fragmentShader: landFragment, transparent: true }));
-  chart.position.y = LAND_Y;
+  chart.position.set(0, LAND_Y, LAND_Z);
   chart.renderOrder = 1;
   scene.add(chart);
   let disposed = false, loaded = 0;
@@ -166,11 +170,29 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     landUniforms.uMap.value = tex; done();
   });
-  loader.load('assets/data/nautical-height.png', tex => {
+  const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * LAND, LAND_Y + LAND_AMP * 0.6, (pl.v / 100 - 0.5) * LAND + LAND_Z));
+  loader.load('assets/data/nautical-terrain.png', tex => {
     if (disposed) { tex.dispose(); return; }
-    landUniforms.uHeight.value = tex; done();
+    landUniforms.uHeight.value = tex;
+    (sea.material as ShaderMaterial).uniforms.uTerrain.value = tex;
+    // 地名立在各自大陆的地面上方一点（读高度图在该处附近的最高值）
+    try {
+      const img = tex.image as CanvasImageSource & { width: number; height: number };
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      if (g) {
+        g.drawImage(img, 0, 0, 128, 128);
+        const px = g.getImageData(0, 0, 128, 128).data;
+        places.forEach((pl, i) => {
+          let top = 0;
+          const cx = Math.round(pl.u / 100 * 127), cy = Math.round(pl.v / 100 * 127);
+          for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 2; x <= cx + 2; x++) top = Math.max(top, px[(Math.min(127, Math.max(0, y)) * 128 + Math.min(127, Math.max(0, x))) * 4] / 255);
+          placeWorld[i].y = LAND_Y + top * LAND_AMP + 1.2;
+        });
+      }
+    } catch { /* 读不到像素时保留默认高度 */ }
+    done();
   });
-  const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * LAND, LAND_Y + LAND_AMP * 0.8, (pl.v / 100 - 0.5) * LAND));
   const projected = new Vector3();
 
   // 渲染管线：完整档先把「不含薄膜的场景」画进半分辨率离屏目标供折射采样，再整体渲染并加泛光。
@@ -190,6 +212,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     if (!full && sceneTarget) { sceneTarget.dispose(); sceneTarget = null; }
     membraneUniforms.uScene.value = sceneTarget?.texture ?? null;
     finish.uniforms.uGrain.value = full ? 0.035 : 0.02;
+    landUniforms.uShadow.value = full ? 1 : 0;
   };
   applyTier();
 
@@ -240,21 +263,22 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     const k1 = easeInOut(smooth(0.45, 0.56, p)), k2 = smooth(0.56, 0.65, p), k3 = easeInOut(smooth(0.65, 0.72, p));
     const z3 = z2 + (70 - z2) * k1 + (50 - 70) * k2 + (26 - 50) * k3;
     const y3 = y2 + (7.5 - y2) * k1 + 7 * k3; // 进入后抬高一些，从陆地上方掠过
-    // 四幕：升到扩大后的穹顶内高处俯瞰（离球心不超过扩大后的半径）
-    // 几乎从正上方俯看，视线落在陆地中心，五块大陆都在画面里
-    const top = portrait ? new Vector3(0, 72, 12) : new Vector3(0, 66, 26);
+    // 四幕：升到扩大后的穹顶内高处，斜着俯瞰（约 45°）：山体立起来，远处的海与帷幕内壁留在画面上方。
+    // 升到位以后随滚动继续缓缓推近、压低一点，起伏在移动中更容易读出来。离球心始终不超过扩大后的半径。
+    const a5 = smooth(0.84, 0.97, p);
+    const top = (portrait ? new Vector3(0, 63, 31) : new Vector3(0, 52, 47)).lerp(portrait ? new Vector3(0, 59, 30) : new Vector3(0, 47, 43), a5);
     const sway = Math.sin(time * 0.21) * 0.35 * (1 - a4);
     camPos.set(sway, y3 + (top.y - y3) * a4 + Math.sin(time * 0.33) * 0.12 * (1 - a4), z3 + (top.z - z3) * a4);
     look.set(0, 15 + 3 * a2, 0);
     lookIn.set(0, 8, -90);
-    lookDown.set(0, 0, portrait ? 2 : 3);
+    lookDown.set(0, 0, LAND_Z + (portrait ? 2 - 2 * a5 : -3 - 2 * a5));
     look.lerp(lookIn, k1).lerp(lookDown, a4);
 
     // 视角：推近时只轻微收窄；穿过之后在一段滚动距离里慢慢撑开（不再一下闪进去）；俯瞰时略收
     const wide = portrait ? 82 : 66;
     let fov = fov0 - 6 * k1;
     fov += (wide - fov) * easeInOut(smooth(0.6, 0.72, p));
-    fov += ((portrait ? 96 : 60) - fov) * a4;
+    fov += ((portrait ? 92 : 56) - fov) * a4;
     camera.fov = fov;
     camera.aspect = aspect;
     camera.position.copy(camPos);
@@ -286,7 +310,9 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       // 不在第四幕时清掉内联样式（CSS 默认透明），页面结构不随渲染时机变化。
       if (placesAlpha < 0.01) { if (el.hasAttribute('style')) el.removeAttribute('style'); continue; }
       projected.copy(placeWorld[i]).project(camera);
-      const x = (projected.x * 0.5 + 0.5) * width, y = (-projected.y * 0.5 + 0.5) * height;
+      // 地名不出屏：窄屏上东西两侧的大陆只露出一部分，地名收在屏内 16px 处
+      const half = el.offsetWidth / 2 + 16;
+      const x = Math.min(width - half, Math.max(half, (projected.x * 0.5 + 0.5) * width)), y = (-projected.y * 0.5 + 0.5) * height;
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
       el.style.opacity = String(placesAlpha.toFixed(3));
     }
@@ -324,6 +350,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       }
       membrane.visible = membraneFar.visible = revealed;
       chart.visible = shared.uInside.value > 0.001;
+      (sea.material as ShaderMaterial).uniforms.uLandOn.value = shared.uInside.value * landUniforms.uReady.value;
       composer.render(dt);
       updatePlaces();
     },

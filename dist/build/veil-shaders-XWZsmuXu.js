@@ -55,8 +55,9 @@ void main(){
 }`,a=`
 ${t}
 ${e}
-uniform vec3 uDeep, uGlint;
-uniform float uTime;
+uniform vec3 uDeep, uGlint, uShallow;
+uniform float uTime, uLandSize, uLandZ, uLandOn;
+uniform sampler2D uTerrain;
 varying vec3 vWorld;
 varying vec3 vNormalW;
 void main(){
@@ -72,12 +73,25 @@ void main(){
   float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
   vec3 col = mix(uDeep, skyColor(R), fres);
   float m = max(dot(R, uMoonDir), 0.0);
-  col += uMoon * (pow(m, 1400.0) * 1.6 + pow(m, 80.0) * 0.05);
+  col += uMoon * (pow(m, 1400.0) * 1.6 + pow(m, 80.0) * 0.05) * (1.0 - 0.85 * uLandOn); // 穹顶内俯瞰时压低月光反射，不抢大陆
   // 月光路上的碎光
   float sparkle = step(0.985, vnoise(vec3(vWorld.xz * 2.2, uTime * 1.3))) * pow(m, 18.0);
-  col += uGlint * sparkle * 0.7;
+  col += uGlint * sparkle * 0.7 * (1.0 - 0.8 * uLandOn);
   // 帷幕显形时，朝向穹顶的海面映出一层淡金
   col += uGold * uReveal * smoothstep(0.55, 0.95, -R.z) * smoothstep(0.08, 0.35, R.y) * fres * 0.05;
+  // 穹顶之内：大陆周围的浅海泛起青绿，近岸一圈随浪起伏的白沫，让陆地有了海岸与水深
+  if (uLandOn > 0.001) {
+    vec2 tuv = vec2(vWorld.x / uLandSize + 0.5, 0.5 - (vWorld.z - uLandZ) / uLandSize);
+    if (all(greaterThan(tuv, vec2(0.0))) && all(lessThan(tuv, vec2(1.0)))) {
+      if (texture2D(uTerrain, tuv).r > 0.03) discard; // 陆地底下的海面不画，低地上不会冒出浪尖
+      float wide = texture2D(uTerrain, tuv, 5.0).r, nearC = texture2D(uTerrain, tuv, 2.0).r;
+      float shallow = smoothstep(0.0, 0.09, wide);
+      col = mix(col, uShallow * (0.55 + 0.45 * fres) + col * 0.4, shallow * 0.55 * uLandOn);
+      float surf = smoothstep(0.004, 0.02, nearC) * (1.0 - smoothstep(0.02, 0.05, nearC));
+      float wob = 0.6 + 0.4 * sin(uTime * 1.4 + (vWorld.x + vWorld.z) * 0.9 + vnoise(vec3(vWorld.xz * 0.5, uTime * 0.3)) * 5.0);
+      col += uMoon * surf * wob * 0.09 * uLandOn;
+    }
+  }
   col = mix(col, uHorizon * 0.9, smoothstep(140.0, 900.0, dist));
   gl_FragColor = vec4(col, 1.0);
 }`,o=`
@@ -231,27 +245,45 @@ void main(){
 }`,p=`
 uniform sampler2D uMap, uHeight;
 uniform vec2 uTexel;
-uniform float uAmp, uSize, uInside, uReady;
-uniform vec3 uMoonDir, uMoon, uGold, uHorizon;
+uniform float uAmp, uSize, uInside, uReady, uShadow;
+uniform vec3 uLight, uMoon, uGold, uHorizon;
 varying vec2 vUv;
 varying vec3 vWorld;
+float H(vec2 uv){ return texture2D(uHeight, uv).r; }
 void main(){
-  float h = texture2D(uHeight, vUv).r;
-  float land = smoothstep(0.05, 0.16, h);
+  float h = H(vUv);
+  float land = smoothstep(0.004, 0.03, h);
   if (land < 0.01 || uInside < 0.001) discard;
-  float hx = texture2D(uHeight, vUv + vec2(uTexel.x, 0.0)).r - texture2D(uHeight, vUv - vec2(uTexel.x, 0.0)).r;
-  float hz = texture2D(uHeight, vUv + vec2(0.0, uTexel.y)).r - texture2D(uHeight, vUv - vec2(0.0, uTexel.y)).r;
-  float k = uAmp / (2.0 * uSize);
-  vec3 N = normalize(vec3(-hx * k / uTexel.x, 1.0, hz * k / uTexel.y));
+  // 法线：两倍纹素的中心差分，山体更圆润，不出现像素台阶
+  vec2 e = uTexel * 2.0;
+  float hx = H(vUv + vec2(e.x, 0.0)) - H(vUv - vec2(e.x, 0.0));
+  float hz = H(vUv + vec2(0.0, e.y)) - H(vUv - vec2(0.0, e.y));
+  float k = uAmp / uSize;
+  vec3 N = normalize(vec3(-hx * k / (2.0 * e.x), 1.0, hz * k / (2.0 * e.y)));
   vec3 tex = texture2D(uMap, vUv).rgb;
-  // 月光从侧面照出山脊；头顶织就的穹顶洒下一层很淡的金光
-  vec3 L = normalize(vec3(uMoonDir.x, 0.85, uMoonDir.z));
-  float lit = max(dot(N, L), 0.0);
-  vec3 col = tex * (0.2 + 0.62 * lit) * vec3(0.8, 0.88, 1.0) + tex * uGold * 0.1;
-  // 海岸：浅浅一圈月白的浪花
-  float shore = smoothstep(0.05, 0.1, h) * (1.0 - smoothstep(0.1, 0.17, h));
-  col += uMoon * shore * 0.18;
-  // 远处融进夜色
-  col = mix(col, uHorizon * 0.8, smoothstep(90.0, 220.0, distance(cameraPosition, vWorld)) * 0.7);
+  float lit = max(dot(N, uLight), 0.0);
+  // 山体投影：沿光线方向在高度图上步进，被更高的山挡住则落进阴影（软化成半影）
+  float shade = 1.0;
+  if (uShadow > 0.5) {
+    vec2 dir = normalize(vec2(uLight.x, -uLight.z)) / uSize; // 世界 xz → 纹理 uv（纹理 v 朝北）
+    float rise = uLight.y / length(uLight.xz);
+    float h0 = h * uAmp;
+    for (int i = 1; i <= 18; i++) {
+      float d = float(i) * float(i) * 0.06 + float(i) * 0.25; // 近密远疏
+      float ray = h0 + d * rise;
+      float occ = H(vUv + dir * d) * uAmp - ray;
+      shade = min(shade, 1.0 - smoothstep(0.0, 0.6 + d * 0.05, occ));
+    }
+  }
+  // 环境遮蔽：比周围低的凹处（河谷、山间）暗一些，山脊亮一些
+  float around = texture2D(uHeight, vUv, 4.0).r;
+  float ao = clamp(1.0 + (h - around) * 3.0, 0.55, 1.2);
+  vec3 col = tex * (0.16 + 0.95 * lit * (0.25 + 0.75 * shade)) * vec3(0.84, 0.9, 1.0) * ao;
+  col += tex * uGold * (0.08 + 0.12 * N.y * h); // 帷幕的金光，高处多一点
+  // 海岸：一圈月白的浪花
+  float shore = smoothstep(0.004, 0.012, h) * (1.0 - smoothstep(0.012, 0.045, h));
+  col += uMoon * shore * 0.16;
+  float dist = distance(cameraPosition, vWorld);
+  col = mix(col, uHorizon * 0.7, smoothstep(70.0, 190.0, dist) * 0.75);
   gl_FragColor = vec4(col, land * uInside * uReady);
 }`;export{f as a,a as c,n as d,s as f,p as i,i as l,d as n,u as o,o as p,c as r,l as s,e as t,r as u};

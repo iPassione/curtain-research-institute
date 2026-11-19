@@ -161,7 +161,8 @@ curtain-research-institute/
 │   ├── build-images.mjs     AVIF/WebP 多尺寸
 │   ├── build-search.mjs     检索索引
 │   ├── build-glossary.mjs   术语表
-│   └── derive-height.mjs    航海图高度图
+│   ├── derive-height.mjs    航海图高度图（地理馆浮雕）
+│   └── derive-terrain.py    航海图地形图（首页穹顶之下）
 ├── src/
 │   ├── main.ts  router.ts  state.ts
 │   ├── styles/              tokens.css base.css shell.css read.css exhibits.css veil.css
