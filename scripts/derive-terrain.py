@@ -6,13 +6,19 @@
 #      开闭运算去碎点、补内部空洞，排除罗盘与上下两处纹饰。
 #   2. 海岸抬升：到海岸的距离 → 1 - exp(-d/18)，海岸是缓坡，内陆逐渐升高。
 #   3. 山地：细尺度亮度方差（山的笔触密），绿色林地压低，平滑成连绵的山体。
-#   4. 输出 1024×1024 的 8 位灰度 PNG：黑为海面，白为最高处。
+#   4. 地表：林地（偏绿的深色笔触）、积雪（低饱和的亮白），模糊成连片的分布；城镇取红屋顶聚成的团块。
+#   输出：
+#     nautical-terrain.webp 1024² RGB（无损 WebP）：R 高度（黑为海面）、G 林地、B 积雪
+#     nautical-tint.png     256² RGB：陆地的整体色调（中值滤波去掉笔触后再模糊，海上延伸最近陆地的颜色）
+#     src/gl/scenes/terrain-towns.ts  城镇灯火的位置与大小（图上百分比）
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
 
 SRC = 'assets-src/nautical-chart.png'
-OUT = 'assets-src/data/nautical-terrain.png'
+OUT = 'assets-src/data/nautical-terrain.webp'
+TINT = 'assets-src/data/nautical-tint.png'
+TOWNS = 'src/gl/scenes/terrain-towns.ts'
 N = 1024
 
 img = np.asarray(Image.open(SRC).convert('RGB').resize((N, N), Image.LANCZOS)).astype(np.float32) / 255
@@ -54,13 +60,43 @@ rise = 1 - np.exp(-nd.distance_transform_edt(land) / 18)
 # 3. 山地
 green = np.clip((g - np.maximum(r, b)) * 4, 0, 1)
 fine = nd.gaussian_filter(lum ** 2, 1.5) - nd.gaussian_filter(lum, 1.5) ** 2
-mount = nd.gaussian_filter(np.sqrt(np.maximum(fine, 0)) * (1 - 0.5 * nd.gaussian_filter(green, 3)), 9)
+mount = nd.gaussian_filter(np.sqrt(np.maximum(fine, 0)) * (1 - 0.5 * nd.gaussian_filter(green, 3)), 15)
 lo, hi = np.percentile(mount[land], [5, 97])
 mount = np.clip((mount - lo) / (hi - lo), 0, 1)
 
-height = rise * (0.2 + 0.8 * mount ** 2.0)
+height = rise * (0.25 + 0.75 * mount ** 1.6)
 height = nd.gaussian_filter(nd.gaussian_filter(height, 2.0) * land, 1.4)
 height /= height.max()
 
-Image.fromarray((height * 255).round().astype('uint8')).save(OUT, optimize=True)
-print(f'地形高度图已写入 {OUT}（{N}×{N}），陆地约占图内 {land[inside].mean() * 100:.0f}%。')
+# 4. 地表
+mx, mn = np.maximum(np.maximum(r, g), b), np.minimum(np.minimum(r, g), b)
+sat = (mx - mn) / (mx + 1e-4)
+inner = nd.binary_erosion(land, iterations=3)
+forest = nd.gaussian_filter(((g > r * 0.97) & (g > b * 1.2) & (lum < 0.5)).astype(np.float32), 4) * inner
+forest = np.clip(forest / np.percentile(forest[land], 99), 0, 1)
+snow = nd.gaussian_filter(np.clip((lum - 0.68) * 5, 0, 1) * np.clip(1 - sat * 3, 0, 1), 3) * land
+snow = np.clip(snow / np.percentile(snow[land], 99.5), 0, 1)
+rgb = np.dstack([height, forest, snow])
+Image.fromarray((rgb * 255).round().astype('uint8'), 'RGB').save(OUT, lossless=True, quality=100, method=6)
+
+# 色调：去掉笔触，海上延伸最近的陆地颜色，边缘不会混进羊皮纸色
+small = (img * 255).astype('uint8')
+med = np.dstack([nd.median_filter(small[..., k], size=11) for k in range(3)]).astype(np.float32) / 255
+_, (iy, ix) = nd.distance_transform_edt(~land, return_indices=True)
+filled = med[iy, ix]
+tint = np.dstack([nd.gaussian_filter(filled[..., k], 6) for k in range(3)])
+Image.fromarray((tint * 255).round().astype('uint8'), 'RGB').resize((256, 256), Image.LANCZOS).save(TINT, optimize=True)
+
+# 城镇：红屋顶聚成的团块
+red = (r > 0.42) & (r - g > 0.22) & (r - b > 0.25) & (sat > 0.45) & inner
+lab, n = nd.label(nd.binary_dilation(red, iterations=2))
+centers = nd.center_of_mass(red, lab, range(1, n + 1))
+sizes = nd.sum(red, lab, range(1, n + 1))
+towns = sorted([(c[1] / N * 100, c[0] / N * 100, float(sz)) for c, sz in zip(centers, sizes) if sz > 18], key=lambda t: -t[2])[:40]
+with open(TOWNS, 'w', encoding='utf-8', newline='\n') as f:
+    f.write('// 由 scripts/derive-terrain.py 生成，勿手改：航海图上红屋顶聚成的城镇（u、v 为图上百分比，s 为相对大小 0–1）。\n')
+    f.write('export const TOWNS: [number, number, number][] = [\n')
+    top = towns[0][2] if towns else 1
+    for u, v, sz in towns: f.write(f'  [{u:.2f}, {v:.2f}, {min(1, (sz / top) ** 0.5):.2f}],\n')
+    f.write('];\n')
+print(f'地形图已写入 {OUT}（{N}×{N}），陆地约占图内 {land[inside].mean() * 100:.0f}%；色调图 {TINT}；城镇 {len(towns)} 处。')

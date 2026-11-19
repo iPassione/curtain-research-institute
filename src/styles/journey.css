@@ -45,8 +45,9 @@
 .journey-place::after { content: ''; display: block; width: 5px; height: 5px; margin: 7px auto 0; background: var(--gold, #d4b36e); transform: rotate(45deg); box-shadow: 0 0 10px #d4b36e; }
 .journey-place { text-decoration: none; pointer-events: none; transition: scale .35s cubic-bezier(.2, .7, .2, 1), color .35s; }
 .journey-place.is-live { pointer-events: auto; cursor: pointer; }
-.journey-place.is-hot { scale: 1.14; color: #fff6dc; }
-.journey-place.is-hot::after { box-shadow: 0 0 14px 2px #e9c983; }
+.journey-place.is-hot { scale: 1.2; color: #ffe9b8; text-shadow: 0 1px 10px #07110f, 0 0 2px #07110f, 0 0 22px #d4b36e99; }
+.journey-place.is-hot small { color: #ffe0a0; }
+.journey-place.is-hot::after { box-shadow: 0 0 16px 3px #e9c983; }
 .journey-stage.is-picking { cursor: pointer; }
 .journey[data-gl=off] .journey-places { display: none; }
 

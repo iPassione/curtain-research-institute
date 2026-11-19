@@ -18,8 +18,9 @@ import type { WebGLRenderer } from 'three';
 import type { GLScene } from '../stage';
 import type { Tier } from '../tier';
 import {
-  finishShader, lampFragment, landFragment, landVertex, membraneFragment, membraneVertex, seaFragment, seaVertex, skyFragment, skyVertex, starFragment, starVertex,
+  cloudFragment, cloudVertex, finishShader, lampFragment, landFragment, landVertex, townFragment, townVertex, membraneFragment, membraneVertex, seaFragment, seaVertex, skyFragment, skyVertex, starFragment, starVertex,
 } from './veil-shaders';
+import { TOWNS } from './terrain-towns';
 
 const R = 60; // 穹顶半径（场景单位）
 const lin = (hex: string) => new Color(hex); // Color 默认把 sRGB 十六进制转为线性值
@@ -104,7 +105,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       uDeep: { value: lin('#03100e') },
       uGlint: { value: lin('#fff2cf') },
       uWaves: { value: [new Vector4(1, 0.35, 0.16, 38), new Vector4(0.6, 1, 0.12, 22), new Vector4(-0.4, 1, 0.1, 13), new Vector4(1, -0.7, 0.08, 7)] },
-      uShallow: { value: lin('#2f6f66') }, uTerrain: { value: null as Texture | null }, uLandSize: { value: LAND }, uLandZ: { value: LAND_Z }, uLandOn: { value: 0 },
+      uShallow: { value: lin('#2f6f66') }, uTerrain: { value: null as Texture | null }, uLandSize: { value: LAND }, uLandZ: { value: LAND_Z }, uLandOn: { value: 0 }, uCenters: { value: null as unknown }, uLift: { value: null as unknown },
     },
     vertexShader: seaVertex, fragmentShader: seaFragment,
   }));
@@ -147,35 +148,84 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   membrane.renderOrder = 3;
   scene.add(membraneFar, membrane);
 
-  // 穹顶之下的五大陆：地理馆浮雕同一张高度图隆起成地形，颜色取航海图上陆地的部分；两张图都载入后才显示。
+  // 穹顶之下的五大陆：按航海图派生的地形、林地、积雪与色调程序化地画出写实的地表（见 veil-shaders.ts）；两张数据图都载入后才显示。
+  const centers = places.length ? places.map(pl => new Vector2(pl.u / 100, 1 - pl.v / 100)) : Array.from({ length: 5 }, () => new Vector2(9, 9));
+  const lifts = [0, 0, 0, 0, 0], liftVel = [0, 0, 0, 0, 0];
+  const anyHot = { value: 0 };
+  const octaves = { OCTAVES: tier === 'full' ? 5 : 3 };
   const landUniforms = {
-    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 1024, 1 / 1024) },
+    uTint: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 1024, 1 / 1024) },
+    uTime: shared.uTime, uAnyHot: anyHot, uBaseY: { value: LAND_Y },
     uAmp: { value: LAND_AMP }, uSize: { value: LAND }, uInside: shared.uInside, uReady: { value: 0 }, uShadow: { value: 0 },
     // 主光从东北侧斜照：镜头从南往北看时山体一侧亮、一侧落影，起伏最清楚；与天上月亮同在右侧
-    uLight: { value: new Vector3(0.78, 0.5, -0.38).normalize() },
+    uLight: { value: new Vector3(0.8, 0.4, -0.42).normalize() },
     uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
-    uCenters: { value: places.length ? places.map(pl => new Vector2(pl.u / 100, 1 - pl.v / 100)) : Array.from({ length: 5 }, () => new Vector2(9, 9)) },
-    uLift: { value: [0, 0, 0, 0, 0] },
+    uCenters: { value: centers },
+    uLift: { value: lifts },
   };
+  (sea.material as ShaderMaterial).uniforms.uCenters.value = centers;
+  (sea.material as ShaderMaterial).uniforms.uLift.value = lifts;
   const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 384 : 200, tier === 'full' ? 384 : 200);
   landGeometry.rotateX(-Math.PI / 2);
-  const chart = new Mesh(landGeometry, new ShaderMaterial({ uniforms: landUniforms, vertexShader: landVertex, fragmentShader: landFragment, transparent: true }));
+  const chart = new Mesh(landGeometry, new ShaderMaterial({ uniforms: landUniforms, vertexShader: landVertex, fragmentShader: landFragment, transparent: true, defines: octaves }));
   chart.position.set(0, LAND_Y, LAND_Z);
   chart.renderOrder = 1;
   scene.add(chart);
+
+  // 城镇灯火：每座城镇一簇小光点（按城镇大小 3–12 个），位置在航海图红屋顶聚集处
+  const townRand = mulberry32(1254);
+  const townPos: number[] = [], townSize: number[] = [], townPhase: number[] = [];
+  for (const [u, v, sz] of TOWNS) {
+    const n = 3 + Math.round(sz * 9);
+    for (let i = 0; i < n; i++) {
+      const a = townRand() * Math.PI * 2, r = Math.sqrt(townRand()) * (0.002 + sz * 0.0055);
+      townPos.push(u / 100 + Math.cos(a) * r, 0, 1 - v / 100 + Math.sin(a) * r);
+      townSize.push((i === 0 ? 2.2 : 1) * (0.9 + townRand() * 0.8) * (0.8 + sz * 0.6));
+      townPhase.push(townRand());
+    }
+  }
+  const townGeometry = new BufferGeometry();
+  townGeometry.setAttribute('position', new BufferAttribute(new Float32Array(townPos), 3));
+  townGeometry.setAttribute('aSize', new BufferAttribute(new Float32Array(townSize), 1));
+  townGeometry.setAttribute('aPhase', new BufferAttribute(new Float32Array(townPhase), 1));
+  const townUniforms = {
+    uHeight: landUniforms.uHeight, uAmp: landUniforms.uAmp, uSize: landUniforms.uSize, uCenters: landUniforms.uCenters, uLift: landUniforms.uLift,
+    uTime: shared.uTime, uDpr: { value: 1 }, uBaseY: { value: LAND_Y }, uBaseZ: { value: LAND_Z }, uOn: { value: 0 },
+  };
+  const towns = new Points(townGeometry, new ShaderMaterial({
+    uniforms: townUniforms, vertexShader: townVertex, fragmentShader: townFragment, defines: octaves,
+    blending: AdditiveBlending, depthWrite: false, transparent: true,
+  }));
+  towns.frustumCulled = false; // 位置在着色器里算，包围盒不准
+  towns.renderOrder = 1.5;
+  scene.add(towns);
+
+  // 低云：两层高度不同、飘速不同，镜头移动时有前后层次（精简档只留一层）
+  const cloudLayers = [{ y: 9.5, drift: 0, density: 0.32 }, { y: 15, drift: 3.7, density: 0.22 }].map(({ y, drift, density }) => {
+    const g = new PlaneGeometry(LAND * 1.1, LAND * 1.1, 1, 1);
+    g.rotateX(-Math.PI / 2);
+    const mesh = new Mesh(g, new ShaderMaterial({
+      uniforms: { uTime: shared.uTime, uOn: { value: 0 }, uDrift: { value: drift }, uDensity: { value: density }, uCenter: { value: new Vector2(0, LAND_Z) }, uRadius: { value: LAND * 0.55 } },
+      vertexShader: cloudVertex, fragmentShader: cloudFragment, transparent: true, depthWrite: false, side: 2,
+    }));
+    mesh.position.set(0, LAND_Y + y, LAND_Z);
+    mesh.renderOrder = 1.8;
+    scene.add(mesh);
+    return mesh;
+  });
   let disposed = false, loaded = 0;
   const loader = new TextureLoader();
   const done = () => { if (++loaded === 2) landUniforms.uReady.value = 1; };
-  loader.load('assets/nautical-chart-1254.webp', tex => {
+  loader.load('assets/data/nautical-tint.png', tex => {
     if (disposed) { tex.dispose(); return; }
     tex.colorSpace = SRGBColorSpace;
-    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-    landUniforms.uMap.value = tex; done();
+    landUniforms.uTint.value = tex; done();
   });
   const heights = new Float32Array(128 * 128); // 拾取用的低分辨率高度（载入后填上）
   const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * LAND, LAND_Y + LAND_AMP * 0.6, (pl.v / 100 - 0.5) * LAND + LAND_Z));
-  loader.load('assets/data/nautical-terrain.png', tex => {
+  loader.load('assets/data/nautical-terrain.webp', tex => {
     if (disposed) { tex.dispose(); return; }
+    tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     landUniforms.uHeight.value = tex;
     (sea.material as ShaderMaterial).uniforms.uTerrain.value = tex;
     // 地名立在各自大陆的地面上方一点（读高度图在该处附近的最高值）
@@ -191,7 +241,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
           let top = 0;
           const cx = Math.round(pl.u / 100 * 127), cy = Math.round(pl.v / 100 * 127);
           for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 2; x <= cx + 2; x++) top = Math.max(top, px[(Math.min(127, Math.max(0, y)) * 128 + Math.min(127, Math.max(0, x))) * 4] / 255);
-          placeWorld[i].y = LAND_Y + top * LAND_AMP + 1.2;
+          placeWorld[i].y = LAND_Y + top * LAND_AMP + 2.6;
         });
       }
     } catch { /* 读不到像素时保留默认高度 */ }
@@ -337,10 +387,13 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   const stageEl = places[0]?.el.closest<HTMLElement>('.journey-stage') ?? null;
   let landHot = -1, labelHot = -1, live = false;
   const hot = () => (labelHot >= 0 ? labelHot : landHot);
+  // 记下鼠标位置，每帧重新拾取：滚动时镜头在动、鼠标不动，选中的大陆也要跟着变
+  let mouse: { x: number; y: number; free: boolean } | null = null;
   const onHover = (e: PointerEvent) => {
-    if (e.pointerType !== 'mouse') return;
-    landHot = live && !(e.target as Element).closest?.('a, button, input') ? pick(e.clientX, e.clientY) : -1;
+    if (e.pointerType !== 'mouse') { mouse = null; return; }
+    mouse = { x: e.clientX, y: e.clientY, free: !(e.target as Element).closest?.('a, button, input') };
   };
+  const onLeave = () => { mouse = null; };
   // 点在大陆上：等同点它的地名（站内路由接管跳转）。触屏轻点也走这里。
   const onClick = (e: MouseEvent) => {
     if (!live || e.defaultPrevented || e.button !== 0 || (e.target as Element).closest?.('a, button, input')) return;
@@ -350,18 +403,28 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   };
   addEventListener('pointermove', onHover, { passive: true });
   addEventListener('click', onClick);
+  document.addEventListener('pointerleave', onLeave);
   const labelOff = new AbortController();
   places.forEach((pl, k) => {
     pl.el.addEventListener('pointerenter', () => { labelHot = k; }, { signal: labelOff.signal });
     pl.el.addEventListener('pointerleave', () => { if (labelHot === k) labelHot = -1; }, { signal: labelOff.signal });
   });
-  const lifts = landUniforms.uLift.value;
   const updateHot = (dt: number) => {
     const wasLive = live;
     live = placesAlpha > 0.5;
     if (!live) { landHot = labelHot = -1; }
+    else landHot = mouse?.free ? pick(mouse.x, mouse.y) : -1;
     const h = hot();
-    for (let k = 0; k < lifts.length; k++) lifts[k] += ((k === h ? 1 : 0) - lifts[k]) * (1 - Math.exp(-dt * 7));
+    // 弹簧：抬起时略微冲过头再落定，像被托起来；放下时干脆一些
+    const step = Math.min(dt, 0.05);
+    let most = 0;
+    for (let k = 0; k < lifts.length; k++) {
+      const goal = k === h ? 1 : 0;
+      liftVel[k] += ((goal - lifts[k]) * (goal ? 70 : 90) - liftVel[k] * (goal ? 9 : 16)) * step;
+      lifts[k] = Math.max(0, lifts[k] + liftVel[k] * step);
+      most = Math.max(most, Math.min(1, lifts[k]));
+    }
+    anyHot.value = most;
     places.forEach((pl, k) => { pl.el.classList.toggle('is-live', live); pl.el.classList.toggle('is-hot', k === h); });
     stageEl?.classList.toggle('is-picking', live && landHot >= 0);
     if (wasLive && !live) stageEl?.classList.remove('is-picking');
@@ -373,7 +436,9 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       const el = places[i].el;
       // 不在第四幕时清掉内联样式（CSS 默认透明），页面结构不随渲染时机变化。
       if (placesAlpha < 0.01) { if (el.hasAttribute('style')) el.removeAttribute('style'); continue; }
-      projected.copy(placeWorld[i]).project(camera);
+      projected.copy(placeWorld[i]);
+      projected.y += lifts[i] * 2.8; // 地名跟着大陆一起抬起
+      projected.project(camera);
       // 地名不出屏：窄屏上东西两侧的大陆只露出一部分，地名收在屏内 16px 处
       const half = el.offsetWidth / 2 + 16;
       const x = Math.min(width - half, Math.max(half, (projected.x * 0.5 + 0.5) * width)), y = (-projected.y * 0.5 + 0.5) * height;
@@ -390,6 +455,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       composer.setSize(w, h);
       bloom.resolution.set(w * dpr * 0.5, h * dpr * 0.5);
       starMaterial.uniforms.uDpr.value = dpr;
+      townUniforms.uDpr.value = dpr;
       lampMaterial.uniforms.uDpr.value = dpr;
       membraneUniforms.uResolution.value.set(w * dpr, h * dpr);
       sceneTarget?.setSize(Math.max(1, Math.round(w * dpr * 0.5)), Math.max(1, Math.round(h * dpr * 0.5)));
@@ -407,14 +473,19 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       const revealed = shared.uReveal.value > 0.001;
       if (sceneTarget && revealed && shared.uInside.value < 1) {
         // 折射只取帷幕外的世界：薄膜与内部的航海图都不进入离屏目标。
-        membrane.visible = membraneFar.visible = chart.visible = false;
+        membrane.visible = membraneFar.visible = chart.visible = towns.visible = false;
+        for (const c of cloudLayers) c.visible = false;
         renderer.setRenderTarget(sceneTarget);
         renderer.render(scene, camera);
         renderer.setRenderTarget(null);
       }
       membrane.visible = membraneFar.visible = revealed;
       chart.visible = shared.uInside.value > 0.001;
-      (sea.material as ShaderMaterial).uniforms.uLandOn.value = shared.uInside.value * landUniforms.uReady.value;
+      const landOn = shared.uInside.value * landUniforms.uReady.value;
+      (sea.material as ShaderMaterial).uniforms.uLandOn.value = landOn;
+      townUniforms.uOn.value = landOn;
+      towns.visible = chart.visible;
+      for (const c of cloudLayers) { (c.material as ShaderMaterial).uniforms.uOn.value = landOn; c.visible = chart.visible && (c === cloudLayers[0] || tier === 'full'); }
       composer.render(dt);
       updatePlaces();
       updateHot(dt);
@@ -425,10 +496,11 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       removeEventListener('pointermove', onPointer);
       removeEventListener('pointermove', onHover);
       removeEventListener('click', onClick);
+      document.removeEventListener('pointerleave', onLeave);
       labelOff.abort();
       places.forEach(pl => pl.el.classList.remove('is-live', 'is-hot'));
       stageEl?.classList.remove('is-picking');
-      landUniforms.uMap.value?.dispose();
+      landUniforms.uTint.value?.dispose();
       landUniforms.uHeight.value?.dispose();
       composer.dispose();
       sceneTarget?.dispose();
