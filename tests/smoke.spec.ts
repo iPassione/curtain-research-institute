@@ -289,3 +289,13 @@ test('单页切换到达的页面与直接打开逐字一致', async ({ page }) 
     expect(strip(await snapshot()), url).toEqual(strip(direct[url]));
   }
 });
+
+test('地理馆带 continent 参数：直接展开那块大陆；不合法的参数回到中央大陆', async ({ page }) => {
+  await page.goto('/?page=geography&continent=4&gl=static#continents');
+  await expect(page.locator('[data-chart-place="4"]')).toHaveAttribute('aria-pressed', 'true');
+  const name = await page.locator('[data-chart-place="4"] strong').textContent();
+  await expect(page.locator('#continents .atlas-note h3')).toHaveText(name!);
+  expect(await page.locator('#continents').evaluate(el => Math.abs(el.getBoundingClientRect().top) < 200)).toBe(true);
+  await page.goto('/?page=geography&continent=9&gl=static');
+  await expect(page.locator('[data-chart-place="0"]')).toHaveAttribute('aria-pressed', 'true');
+});

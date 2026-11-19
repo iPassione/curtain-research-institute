@@ -154,6 +154,8 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     // 主光从东北侧斜照：镜头从南往北看时山体一侧亮、一侧落影，起伏最清楚；与天上月亮同在右侧
     uLight: { value: new Vector3(0.78, 0.5, -0.38).normalize() },
     uMoon: shared.uMoon, uGold: shared.uGold, uHorizon: shared.uHorizon,
+    uCenters: { value: places.length ? places.map(pl => new Vector2(pl.u / 100, 1 - pl.v / 100)) : Array.from({ length: 5 }, () => new Vector2(9, 9)) },
+    uLift: { value: [0, 0, 0, 0, 0] },
   };
   const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 384 : 200, tier === 'full' ? 384 : 200);
   landGeometry.rotateX(-Math.PI / 2);
@@ -170,6 +172,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     landUniforms.uMap.value = tex; done();
   });
+  const heights = new Float32Array(128 * 128); // 拾取用的低分辨率高度（载入后填上）
   const placeWorld = places.map(pl => new Vector3((pl.u / 100 - 0.5) * LAND, LAND_Y + LAND_AMP * 0.6, (pl.v / 100 - 0.5) * LAND + LAND_Z));
   loader.load('assets/data/nautical-terrain.png', tex => {
     if (disposed) { tex.dispose(); return; }
@@ -183,6 +186,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       if (g) {
         g.drawImage(img, 0, 0, 128, 128);
         const px = g.getImageData(0, 0, 128, 128).data;
+        for (let i = 0; i < 128 * 128; i++) heights[i] = px[i * 4] / 255;
         places.forEach((pl, i) => {
           let top = 0;
           const cx = Math.round(pl.u / 100 * 127), cy = Math.round(pl.v / 100 * 127);
@@ -303,6 +307,66 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     placesAlpha = smooth(0.8, 0.88, p) * (1 - smooth(0.95, 0.99, p));
   };
 
+  // 拾取：沿视线从地形最高处往下步进，碰到地面时按离哪个中心最近判断是哪块大陆；落在海上则为 -1。
+  const ray = new Raycaster(), hitP = new Vector3();
+  const heightAt = (x: number, z: number) => {
+    const u = x / LAND + 0.5, v = (z - LAND_Z) / LAND + 0.5; // v 自北向南，与高度图的行一致
+    if (u < 0 || u > 1 || v < 0 || v > 1) return 0;
+    return heights[Math.min(127, Math.floor(v * 128)) * 128 + Math.min(127, Math.floor(u * 128))];
+  };
+  const pick = (clientX: number, clientY: number) => {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !places.length) return -1;
+    ray.setFromCamera(new Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1), camera);
+    const { origin, direction } = ray.ray;
+    if (direction.y >= -0.01) return -1;
+    const t0 = (LAND_Y + LAND_AMP - origin.y) / direction.y, t1 = (LAND_Y - origin.y) / direction.y;
+    for (let i = 0; i <= 96; i++) {
+      hitP.copy(origin).addScaledVector(direction, t0 + (t1 - t0) * (i / 96));
+      const h = heightAt(hitP.x, hitP.z);
+      if (hitP.y <= LAND_Y + h * LAND_AMP) {
+        if (h < 0.03) return -1;
+        const u = hitP.x / LAND + 0.5, v = (hitP.z - LAND_Z) / LAND + 0.5;
+        let best = -1, bd = Infinity;
+        places.forEach((pl, k) => { const d = Math.hypot(u - pl.u / 100, v - pl.v / 100); if (d < bd) { bd = d; best = k; } });
+        return best;
+      }
+    }
+    return -1;
+  };
+  const stageEl = places[0]?.el.closest<HTMLElement>('.journey-stage') ?? null;
+  let landHot = -1, labelHot = -1, live = false;
+  const hot = () => (labelHot >= 0 ? labelHot : landHot);
+  const onHover = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    landHot = live && !(e.target as Element).closest?.('a, button, input') ? pick(e.clientX, e.clientY) : -1;
+  };
+  // 点在大陆上：等同点它的地名（站内路由接管跳转）。触屏轻点也走这里。
+  const onClick = (e: MouseEvent) => {
+    if (!live || e.defaultPrevented || e.button !== 0 || (e.target as Element).closest?.('a, button, input')) return;
+    if (stageEl && !stageEl.contains(e.target as Node) && e.target !== document.body && e.target !== document.documentElement) return;
+    const k = pick(e.clientX, e.clientY);
+    if (k >= 0) { e.preventDefault(); places[k].el.click(); }
+  };
+  addEventListener('pointermove', onHover, { passive: true });
+  addEventListener('click', onClick);
+  const labelOff = new AbortController();
+  places.forEach((pl, k) => {
+    pl.el.addEventListener('pointerenter', () => { labelHot = k; }, { signal: labelOff.signal });
+    pl.el.addEventListener('pointerleave', () => { if (labelHot === k) labelHot = -1; }, { signal: labelOff.signal });
+  });
+  const lifts = landUniforms.uLift.value;
+  const updateHot = (dt: number) => {
+    const wasLive = live;
+    live = placesAlpha > 0.5;
+    if (!live) { landHot = labelHot = -1; }
+    const h = hot();
+    for (let k = 0; k < lifts.length; k++) lifts[k] += ((k === h ? 1 : 0) - lifts[k]) * (1 - Math.exp(-dt * 7));
+    places.forEach((pl, k) => { pl.el.classList.toggle('is-live', live); pl.el.classList.toggle('is-hot', k === h); });
+    stageEl?.classList.toggle('is-picking', live && landHot >= 0);
+    if (wasLive && !live) stageEl?.classList.remove('is-picking');
+  };
+
   const updatePlaces = () => {
     if (!places.length) return;
     for (let i = 0; i < places.length; i++) {
@@ -353,11 +417,17 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       (sea.material as ShaderMaterial).uniforms.uLandOn.value = shared.uInside.value * landUniforms.uReady.value;
       composer.render(dt);
       updatePlaces();
+      updateHot(dt);
     },
     setTier(next) { tier = next; if (tier === 'static') return false; applyTier(); return true; },
     dispose() {
       disposed = true;
       removeEventListener('pointermove', onPointer);
+      removeEventListener('pointermove', onHover);
+      removeEventListener('click', onClick);
+      labelOff.abort();
+      places.forEach(pl => pl.el.classList.remove('is-live', 'is-hot'));
+      stageEl?.classList.remove('is-picking');
       landUniforms.uMap.value?.dispose();
       landUniforms.uHeight.value?.dispose();
       composer.dispose();

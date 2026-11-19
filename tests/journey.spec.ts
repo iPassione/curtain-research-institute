@@ -109,3 +109,25 @@ test('第四幕：标题与五大陆地名出现在航海图上，结尾画面�
   await scrollJourney(page, 1);
   await expect.poll(() => page.locator('.journey-gl').evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(0.05);
 });
+
+test('穹顶之下：悬停大陆抬起并点亮地名，点进地理馆并展开那块大陆', async ({ page }) => {
+  await page.goto('/?gl=lite');
+  await expect(page.locator('[data-journey]')).toHaveAttribute('data-gl', 'on', { timeout: 45000 });
+  await scrollJourney(page, 0.88);
+  const places = page.locator('.journey-place');
+  await expect(places.first()).toHaveClass(/is-live/, { timeout: 20000 });
+  await expect(places.first()).toHaveAttribute('tabindex', '-1'); // 视觉层对读屏与键盘隐藏，正文里的入口不变
+  // 指在中央大陆的地面上（地名下方）：中央大陆被选中，鼠标变成手形
+  const box = (await places.first().boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height + 40);
+  await expect(places.first()).toHaveClass(/is-hot/, { timeout: 10000 });
+  await expect(page.locator('.journey-stage')).toHaveClass(/is-picking/);
+  // 指到地名上：换成那块大陆
+  await places.nth(3).hover();
+  await expect(places.nth(3)).toHaveClass(/is-hot/);
+  await expect(places.first()).not.toHaveClass(/is-hot/);
+  await places.nth(3).click();
+  await expect(page).toHaveURL(/page=geography&continent=3#continents/);
+  await expect(page.locator('#continents .atlas-note h3')).toHaveText((await page.locator('[data-chart-place="3"] strong').textContent())!);
+  await expect(page.locator('[data-chart-place="3"]')).toHaveAttribute('aria-pressed', 'true');
+});

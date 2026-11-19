@@ -4,6 +4,7 @@ import { picture } from '../lib/images';
 import type { Manifest } from '../data/types';
 import type { RouteContext } from '../router';
 import { glCapable } from '../gl/tier';
+import { startContinent } from './atlas';
 
 export function mountNautical(ctx: RouteContext, data: Manifest) {
   const { signal } = ctx;
@@ -16,7 +17,7 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
   const originalButtons = [...stage.querySelectorAll<HTMLButtonElement>('[data-place]')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   stage.classList.add('nautical-stage');
-  stage.innerHTML = `<div class="nautical-frame"><div class="nautical-wheel"><div class="nautical-rotor">${picture('assets/nautical-chart.png', 'class="nautical-chart" alt="羊皮卷风格五大陆航海示意图，中央与四周各一块大陆" width="1254" height="1254" draggable="false"', '(max-width:850px) 100vw, 900px')}${regions.map((r, i) => `<button class="chart-place" data-chart-place="${i}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${r.direction}：${r.name}" aria-controls="continent-detail" aria-pressed="${i === 0}"><span class="chart-upright"><span class="chart-marker"></span><span class="chart-label" aria-hidden="true"><small>${r.direction}</small><strong>${r.name}</strong></span></span></button>`).join('')}</div></div><span class="chart-north" aria-hidden="true">N</span><p class="chart-hint" id="chart-instructions">拖动旋转 · 悬停识别 · 点选后在下方阅读</p></div>`;
+  stage.innerHTML = `<div class="nautical-frame"><div class="nautical-wheel"><div class="nautical-rotor">${picture('assets/nautical-chart.png', 'class="nautical-chart" alt="羊皮卷风格五大陆航海示意图，中央与四周各一块大陆" width="1254" height="1254" draggable="false"', '(max-width:850px) 100vw, 900px')}${regions.map((r, i) => `<button class="chart-place" data-chart-place="${i}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${r.direction}：${r.name}" aria-controls="continent-detail" aria-pressed="${i === (startContinent(ctx, regions.length) ?? 0)}"><span class="chart-upright"><span class="chart-marker"></span><span class="chart-label" aria-hidden="true"><small>${r.direction}</small><strong>${r.name}</strong></span></span></button>`).join('')}</div></div><span class="chart-north" aria-hidden="true">N</span><p class="chart-hint" id="chart-instructions">拖动旋转 · 悬停识别 · 点选后在下方阅读</p></div>`;
   const frame = stage.querySelector('.nautical-frame') as HTMLElement;
   frame.tabIndex = 0; frame.setAttribute('role', 'group'); frame.setAttribute('aria-label', '可旋转的五大陆航海图'); frame.setAttribute('aria-describedby', 'chart-instructions');
   const tools = document.createElement('div'); tools.className = 'chart-tools';
@@ -35,7 +36,8 @@ export function mountNautical(ctx: RouteContext, data: Manifest) {
   const autoButton = tools.querySelector('.chart-auto') as HTMLButtonElement;
   let angle = 0, automatic = !reduced.matches, visible = false, raf = 0, previous = 0, drag: { id: number; x: number; y: number; angle: number; pitch: number; t: number } | null = null;
   // 立体航海图用到的状态：选中的大陆、是否已点选（镜头飞近）、悬停/聚焦的大陆、纵向拖动给出的俯仰、松手后的惯性。
-  let selectedIndex = 0, focused = false, hotIndex = -1, pitchOffset = 0, velocity = 0, spin = 0;
+  const start = startContinent(ctx, regions.length);
+  let selectedIndex = start ?? 0, focused = start != null, hotIndex = -1, pitchOffset = 0, velocity = 0, spin = 0;
   const gl3d = () => stage.dataset.gl === 'on';
   const normalise = (n: number) => ((n + 180) % 360 + 360) % 360 - 180;
   function paint() { const n = normalise(angle); rotor.style.transform = `rotate(${n}deg)`; labels.forEach(l => l.style.transform = `rotate(${-n}deg)`); slider.value = String(Math.round(n)); output.value = `${Math.round(n)}°`; frame.dataset.angle = String(n); }

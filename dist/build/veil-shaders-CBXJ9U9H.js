@@ -231,14 +231,26 @@ void main(){
   c.rgb *= 1.0 - uVignette * smoothstep(0.35, 0.95, dot(d, d) * 2.2);
   gl_FragColor = c;
 }`},f=`
+
+uniform vec2 uCenters[5];
+uniform float uLift[5];
+float liftAt(vec2 uv){
+  float best = 1e9, lift = 0.0;
+  for (int i = 0; i < 5; i++) { float d = distance(uv, uCenters[i]); if (d < best) { best = d; lift = uLift[i]; } }
+  return lift;
+}
+
 uniform sampler2D uHeight;
 uniform float uAmp;
 varying vec2 vUv;
 varying vec3 vWorld;
+varying float vLift;
 void main(){
   vUv = uv;
   vec3 p = position;
-  p.y += texture2D(uHeight, uv).r * uAmp;
+  float h = texture2D(uHeight, uv).r;
+  vLift = liftAt(uv);
+  p.y += h * uAmp + vLift * 1.1 * smoothstep(0.004, 0.06, h);
   vec4 w = modelMatrix * vec4(p, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
@@ -249,6 +261,7 @@ uniform float uAmp, uSize, uInside, uReady, uShadow;
 uniform vec3 uLight, uMoon, uGold, uHorizon;
 varying vec2 vUv;
 varying vec3 vWorld;
+varying float vLift;
 float H(vec2 uv){ return texture2D(uHeight, uv).r; }
 void main(){
   float h = H(vUv);
@@ -283,6 +296,9 @@ void main(){
   // 海岸：一圈月白的浪花
   float shore = smoothstep(0.004, 0.012, h) * (1.0 - smoothstep(0.012, 0.045, h));
   col += uMoon * shore * 0.16;
+  // 选中的大陆：稍亮一些，海岸一圈金边
+  col *= 1.0 + vLift * 0.18;
+  col += uGold * vLift * (shore * 1.6 + (1.0 - smoothstep(0.012, 0.09, h)) * 0.35);
   float dist = distance(cameraPosition, vWorld);
   col = mix(col, uHorizon * 0.7, smoothstep(70.0, 190.0, dist) * 0.75);
   gl_FragColor = vec4(col, land * uInside * uReady);

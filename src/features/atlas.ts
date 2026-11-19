@@ -4,6 +4,13 @@ import type { Manifest } from '../data/types';
 import type { RouteContext } from '../router';
 import { glCapable } from '../gl/tier';
 
+/** 地址里的 continent（0–4，顺序同 manifest.regions），没有或不合法时为 null。 */
+export function startContinent(ctx: RouteContext, count: number): number | null {
+  const raw = ctx.params.get('continent');
+  const n = raw == null || raw === '' ? NaN : Number(raw);
+  return Number.isInteger(n) && n >= 0 && n < count ? n : null;
+}
+
 export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
   if (!['geography', 'magic', 'people'].includes(page)) return;
   const { signal } = ctx;
@@ -20,7 +27,9 @@ export function mountAtlas(ctx: RouteContext, data: Manifest, page: string) {
     panel.innerHTML = `<div class="atlas-heading"><div><p class="atlas-eyebrow">地理观测 · 方位图</p><h2>五大陆之间</h2></div><p>选择一处方位，阅读它的地方传统。</p></div><div class="atlas-body"><div class="atlas-stage geo-stage">${svgOpen}<defs><radialGradient id="sea"><stop stop-color="#355c54"/><stop offset="1" stop-color="#102c2d"/></radialGradient></defs><rect width="800" height="520" fill="url(#sea)"/><g class="survey-lines">${[90, 180, 270, 360].map(r => `<ellipse cx="400" cy="250" rx="${r}" ry="${r * .58}"/>`).join('')}<path d="M40 260H760 M400 30V490 M100 60L700 460 M700 60L100 460"/>${Array.from({ length: 21 }, (_, i) => `<path d="M${40 + i * 36} 36v${i % 5 === 0 ? 12 : 5} M${40 + i * 36} 484v-${i % 5 === 0 ? 12 : 5}"/>`).join('')}</g><g class="compass"><path d="M400 59l-6 15h12z"/><text x="400" y="50" text-anchor="middle">N</text></g></svg>${data.regions.map((r, i) => `<button class="atlas-pin" data-place="${i}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-pressed="${i === 0}"><span class="pin-diamond"></span><small>${escape(r.direction)}</small><strong>${escape(r.name)}</strong></button>`).join('')}<span class="atlas-caption">方位与联系示意，不表示海岸线或实际距离</span></div><div class="atlas-note" aria-live="polite"></div></div>`;
     const note = panel.querySelector('.atlas-note') as HTMLElement;
     const render = (i: number) => { const r = data.regions[i]; panel.querySelectorAll('.atlas-pin').forEach((b, j) => b.setAttribute('aria-pressed', String(j === i))); note.innerHTML = `<span class="atlas-index">${escape(r.direction)}大陆</span><h3>${escape(r.name)}</h3><p>${escape(r.description)}</p><dl><dt>经济与工艺</dt><dd>${economy[i]}</dd><dt>魔法传统</dt><dd>${escape(r.focus)}</dd></dl>${link(ids[i], '阅读地方志')}`; };
-    panel.querySelectorAll<HTMLElement>('[data-place]').forEach(b => b.addEventListener('click', () => render(+b.dataset.place!), { signal })); render(0);
+    panel.id = 'continents';
+    panel.querySelectorAll<HTMLElement>('[data-place]').forEach(b => b.addEventListener('click', () => render(+b.dataset.place!), { signal }));
+    render(startContinent(ctx, data.regions.length) ?? 0); // 从首页穹顶之下点进来时带 continent，直接展开那块大陆
     // The older overview remains a text alternative, without repeating two selection panels.
     const old = root.querySelector('.regions'); if (old) { old.previousElementSibling?.remove(); old.previousElementSibling?.remove(); old.nextElementSibling?.remove(); old.remove(); }
   }

@@ -270,15 +270,29 @@ void main(){
 // 隆起成连绵的山地；颜色取航海图上陆地部分（海的部分丢弃，露出下面真实的海）。只在镜头进入穹顶后显现（uInside）。
 // 光照：侧向的月光勾出山脊，沿光线方向在高度图上步进得到山体投影（完整档），凹处做一层环境遮蔽，
 // 头顶的帷幕洒下很淡的金光；远处融进夜色。
+// 悬停（或聚焦地名）时，那块大陆整体抬起一点，海岸泛起金边。大陆按离五个中心最近来划分（各大陆相隔较远，足够分开）。
+export const LAND_PICK = /* glsl */ `
+uniform vec2 uCenters[5];
+uniform float uLift[5];
+float liftAt(vec2 uv){
+  float best = 1e9, lift = 0.0;
+  for (int i = 0; i < 5; i++) { float d = distance(uv, uCenters[i]); if (d < best) { best = d; lift = uLift[i]; } }
+  return lift;
+}
+`;
 export const landVertex = /* glsl */ `
+${LAND_PICK}
 uniform sampler2D uHeight;
 uniform float uAmp;
 varying vec2 vUv;
 varying vec3 vWorld;
+varying float vLift;
 void main(){
   vUv = uv;
   vec3 p = position;
-  p.y += texture2D(uHeight, uv).r * uAmp;
+  float h = texture2D(uHeight, uv).r;
+  vLift = liftAt(uv);
+  p.y += h * uAmp + vLift * 1.1 * smoothstep(0.004, 0.06, h);
   vec4 w = modelMatrix * vec4(p, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
@@ -290,6 +304,7 @@ uniform float uAmp, uSize, uInside, uReady, uShadow;
 uniform vec3 uLight, uMoon, uGold, uHorizon;
 varying vec2 vUv;
 varying vec3 vWorld;
+varying float vLift;
 float H(vec2 uv){ return texture2D(uHeight, uv).r; }
 void main(){
   float h = H(vUv);
@@ -324,6 +339,9 @@ void main(){
   // 海岸：一圈月白的浪花
   float shore = smoothstep(0.004, 0.012, h) * (1.0 - smoothstep(0.012, 0.045, h));
   col += uMoon * shore * 0.16;
+  // 选中的大陆：稍亮一些，海岸一圈金边
+  col *= 1.0 + vLift * 0.18;
+  col += uGold * vLift * (shore * 1.6 + (1.0 - smoothstep(0.012, 0.09, h)) * 0.35);
   float dist = distance(cameraPosition, vWorld);
   col = mix(col, uHorizon * 0.7, smoothstep(70.0, 190.0, dist) * 0.75);
   gl_FragColor = vec4(col, land * uInside * uReady);
