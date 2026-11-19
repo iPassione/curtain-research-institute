@@ -20,7 +20,7 @@ import type { Tier } from '../tier';
 import {
   cloudFragment, cloudVertex, finishShader, lampFragment, landFragment, landVertex, townFragment, townVertex, membraneFragment, membraneVertex, seaFragment, seaVertex, skyFragment, skyVertex, starFragment, starVertex,
 } from './veil-shaders';
-import { TOWNS } from './terrain-towns';
+import { TOWNS, VILLAGES } from './terrain-towns';
 
 const R = 60; // 穹顶半径（场景单位）
 const lin = (hex: string) => new Color(hex); // Color 默认把 sRGB 十六进制转为线性值
@@ -176,6 +176,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   // 城镇灯火：每座城镇一簇小光点（按城镇大小 3–12 个），位置在航海图红屋顶聚集处
   const townRand = mulberry32(1254);
   const townPos: number[] = [], townSize: number[] = [], townPhase: number[] = [];
+  const townBright: number[] = [];
   for (const [u, v, sz] of TOWNS) {
     const n = 3 + Math.round(sz * 9);
     for (let i = 0; i < n; i++) {
@@ -183,12 +184,24 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       townPos.push(u / 100 + Math.cos(a) * r, 0, 1 - v / 100 + Math.sin(a) * r);
       townSize.push((i === 0 ? 2.2 : 1) * (0.9 + townRand() * 0.8) * (0.8 + sz * 0.6));
       townPhase.push(townRand());
+      townBright.push(1);
+    }
+  }
+  // 村落：零星的一两点小灯，比城镇暗
+  for (const [u, v, sz] of VILLAGES) {
+    const n = townRand() < 0.35 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      townPos.push(u / 100 + (townRand() - 0.5) * 0.002 * i, 0, 1 - v / 100 + (townRand() - 0.5) * 0.002 * i);
+      townSize.push((0.55 + townRand() * 0.35) * (0.8 + sz));
+      townPhase.push(townRand());
+      townBright.push(0.45 + sz * 0.5);
     }
   }
   const townGeometry = new BufferGeometry();
   townGeometry.setAttribute('position', new BufferAttribute(new Float32Array(townPos), 3));
   townGeometry.setAttribute('aSize', new BufferAttribute(new Float32Array(townSize), 1));
   townGeometry.setAttribute('aPhase', new BufferAttribute(new Float32Array(townPhase), 1));
+  townGeometry.setAttribute('aBright', new BufferAttribute(new Float32Array(townBright), 1));
   const townUniforms = {
     uHeight: landUniforms.uHeight, uCover: landUniforms.uCover, uCurve: curve, uAmp: landUniforms.uAmp, uSize: landUniforms.uSize, uRegions: landUniforms.uRegions, uLift: landUniforms.uLift,
     uTime: shared.uTime, uDpr: { value: 1 }, uBaseY: { value: LAND_Y }, uBaseZ: { value: LAND_Z }, uOn: { value: 0 },

@@ -469,6 +469,7 @@ ${TERRAIN}
 ${CURVE}
 attribute float aSize;
 attribute float aPhase;
+attribute float aBright;
 uniform float uTime, uDpr, uBaseY, uBaseZ;
 varying float vGlow;
 void main(){
@@ -477,8 +478,8 @@ void main(){
   vec3 p = vec3((uv.x - 0.5) * uSize, uBaseY + elevation(uv) + lift * 1.6 * liftShape(H(uv)) + 0.08, (0.5 - uv.y) * uSize + uBaseZ);
   vec4 mv = viewMatrix * vec4(curved(p), 1.0);
   float flick = 0.75 + 0.25 * sin(uTime * (1.3 + aPhase * 2.1) + aPhase * 37.0);
-  vGlow = flick * (1.0 + lift * 1.6) * (1.0 - smoothstep(60.0, 170.0, -mv.z) * 0.7);
-  gl_PointSize = aSize * uDpr * 110.0 / max(1.0, -mv.z);
+  vGlow = flick * aBright * (1.0 + lift * 1.6) * (1.0 - smoothstep(60.0, 170.0, -mv.z) * 0.7);
+  gl_PointSize = max(aSize * uDpr * 190.0 / max(1.0, -mv.z), 3.0 * uDpr); // 远处也至少 3 像素，光晕才看得见
   gl_Position = projectionMatrix * mv;
 }`;
 export const townFragment = /* glsl */ `
@@ -486,8 +487,8 @@ uniform float uOn;
 varying float vGlow;
 void main(){
   float d = length(gl_PointCoord - 0.5);
-  float core = smoothstep(0.1, 0.0, d), halo = smoothstep(0.5, 0.0, d);
-  vec3 c = vec3(1.0, 0.64, 0.28) * (core * 3.0 + halo * halo * 0.6) * vGlow;
+  float core = smoothstep(0.12, 0.0, d), halo = smoothstep(0.5, 0.0, d);
+  vec3 c = vec3(1.0, 0.62, 0.26) * (core * 3.2 + halo * halo * 0.9) * vGlow;
   gl_FragColor = vec4(c * uOn, 1.0);
 }`;
 

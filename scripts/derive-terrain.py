@@ -140,16 +140,45 @@ for k, (cy, cx) in enumerate(nd.center_of_mass(land, lab, range(1, n + 1))):
 region_id = region_id[iy, ix]  # 海上取最近陆地所属的大陆
 Image.fromarray(region_id * 60, 'L').resize((256, 256), Image.NEAREST).save(REGIONS, optimize=True)
 
-# 城镇：红屋顶聚成的团块
+# 城镇：红屋顶聚成的团块（较小的也算）
 red = (r > 0.42) & (r - g > 0.22) & (r - b > 0.25) & (sat > 0.45) & inner
 lab, n = nd.label(nd.binary_dilation(red, iterations=2))
 centers = nd.center_of_mass(red, lab, range(1, n + 1))
 sizes = nd.sum(red, lab, range(1, n + 1))
-towns = sorted([(c[1] / N * 100, c[0] / N * 100, float(sz)) for c, sz in zip(centers, sizes) if sz > 18], key=lambda t: -t[2])[:40]
+towns = sorted([(c[1] / N * 100, c[0] / N * 100, float(sz)) for c, sz in zip(centers, sizes) if sz > 8], key=lambda t: -t[2])[:60]
+
+# 村落：按地形散布的零星灯火——低平、不在雪地与密林、靠近河流与海岸、靠近城镇的地方更多；
+# 航海图上少有城镇的大陆（北方冻土、东南森林）也就少有村落。只作夜景的点缀，不对应具体地名。
+hgt = height[::2, ::2]
+gy, gx = np.gradient(hgt * 2.4 / 0.137)
+slope = np.hypot(gx, gy)
+wat = nd.gaussian_filter(water[::2, ::2], 3)
+coastal = np.exp(-nd.distance_transform_edt(land) / 25)
+townish = nd.gaussian_filter(red.astype(np.float32), 45)
+townish /= townish.max() + 1e-9
+suit = inner & (hgt < 0.5) & (slope < 0.2) & (snow < 0.3) & (forest < 0.65) & (water[::2, ::2] < 0.2)
+weight = suit * (0.3 + 1.6 * np.clip(wat * 4, 0, 1) + 0.8 * coastal) * (0.15 + 2.0 * townish ** 0.7)
+vr = np.random.default_rng(1254)
+flat = weight.ravel() / weight.sum()
+picks = vr.choice(flat.size, size=4000, replace=False, p=flat)
+villages, taken = [], np.zeros((N // 8, N // 8), bool)
+for idx in picks:
+    y, x = divmod(int(idx), N)
+    if taken[y // 8, x // 8]:
+        continue
+    taken[max(0, y // 8 - 1):y // 8 + 2, max(0, x // 8 - 1):x // 8 + 2] = True  # 相邻约 16 像素内只留一处
+    villages.append((x / N * 100, y / N * 100, 0.25 + 0.35 * float(townish[y, x]) ** 0.5 * vr.random()))
+    if len(villages) >= 420:
+        break
+
 with open(TOWNS, 'w', encoding='utf-8', newline='\n') as f:
-    f.write('// 由 scripts/derive-terrain.py 生成，勿手改：航海图上红屋顶聚成的城镇（u、v 为图上百分比，s 为相对大小 0–1）。\n')
+    f.write('// 由 scripts/derive-terrain.py 生成，勿手改。u、v 为图上百分比，s 为相对大小 0–1。\n')
+    f.write('// TOWNS：航海图上红屋顶聚成的城镇。VILLAGES：按地形散布的零星村落灯火（夜景点缀，不对应具体地名）。\n')
     f.write('export const TOWNS: [number, number, number][] = [\n')
     top = towns[0][2] if towns else 1
     for u, v, sz in towns: f.write(f'  [{u:.2f}, {v:.2f}, {min(1, (sz / top) ** 0.5):.2f}],\n')
     f.write('];\n')
-print(f'地形图已写入 {OUT}（{M}×{M}），陆地约占图内 {land[inside].mean() * 100:.0f}%；色调图 {TINT}；城镇 {len(towns)} 处。')
+    f.write('export const VILLAGES: [number, number, number][] = [\n')
+    for u, v, sz in villages: f.write(f'  [{u:.2f}, {v:.2f}, {sz:.2f}],\n')
+    f.write('];\n')
+print(f'地形图已写入 {OUT}（{M}×{M}），陆地约占图内 {land[inside].mean() * 100:.0f}%；色调图 {TINT}；城镇 {len(towns)} 处，村落 {len(villages)} 处。')
