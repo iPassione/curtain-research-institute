@@ -123,11 +123,11 @@ test('穹顶之下：悬停大陆抬起并点亮地名，点进地理馆并展�
   await expect(places.first()).toHaveClass(/is-hot/, { timeout: 10000 });
   await expect(page.locator('.journey-stage')).toHaveClass(/is-picking/);
   // 指到地名上：换成那块大陆
-  await places.nth(3).hover();
-  await expect(places.nth(3)).toHaveClass(/is-hot/);
+  await places.nth(2).hover();
+  await expect(places.nth(2)).toHaveClass(/is-hot/);
   await expect(places.first()).not.toHaveClass(/is-hot/);
-  await places.nth(3).click();
-  await expect(page).toHaveURL(/page=geography&continent=3#continents/);
-  await expect(page.locator('#continents .atlas-note h3')).toHaveText((await page.locator('[data-chart-place="3"] strong').textContent())!);
-  await expect(page.locator('[data-chart-place="3"]')).toHaveAttribute('aria-pressed', 'true');
+  await places.nth(2).click();
+  await expect(page).toHaveURL(/page=geography&continent=2#continents/);
+  await expect(page.locator('#continents .atlas-note h3')).toHaveText((await page.locator('[data-chart-place="2"] strong').textContent())!);
+  await expect(page.locator('[data-chart-place="2"]')).toHaveAttribute('aria-pressed', 'true');
 });

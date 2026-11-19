@@ -1,5 +1,5 @@
 # 首页「穹顶之下」五大陆的地形（离线一次性运行，产物提交进仓库）：
-#   python scripts/derive-terrain.py        （需要 numpy、scipy、Pillow、numba；约一分钟）
+#   python scripts/derive-terrain.py        （需要 numpy、scipy、Pillow、numba；约三分钟）
 # 与地理馆浮雕用的 nautical-height.png 分开：那张只求「羊皮纸上隆起」，这张要撑得起写实的大陆。
 # 只读航海图本身，不添加图上没有的地物：
 #   1. 陆地遮罩：与羊皮纸底色的色差 + 局部纹理密度（陆地画满山林城镇），去掉近岸的蓝色浅海；
@@ -10,8 +10,8 @@
 #   4. 侵蚀（scripts/terrain_erosion.py）：先做河流下切（Braun & Willett 2013），冲出树枝状的河谷与冲积平原；
 #      再用水滴侵蚀补上坡面的细沟。最后按汇水面积得到河流，填洼的深度得到湖泊。
 #   输出：
-#     nautical-terrain.webp 1024² RGB（无损 WebP）：R、G 高度的整数与小数部分（h×255 = R + G/256，G 取 4 位；两通道分别插值后相加仍精确）、B 林地
-#     nautical-cover.webp   1024² RGB（无损 WebP）：R 河流与湖泊、G 积雪
+#     nautical-terrain.webp 2048² RGB（无损 WebP）：R、G 高度的整数与小数部分（h×255 = R + G/256，G 取 2 位；两通道分别插值后相加仍精确）（B 不用）
+#     nautical-cover.webp   1024² RGB（无损 WebP）：R 河流与湖泊、G 积雪、B 林地
 #     nautical-regions.png  256² 灰度：每处属于哪块大陆（序号 × 60），供选中时整块抬起
 #     nautical-tint.png     256² RGB：陆地的整体色调（中值滤波去掉笔触后再模糊，海上延伸最近陆地的颜色）
 #     src/gl/scenes/terrain-towns.ts  城镇灯火的位置与大小（图上百分比）
@@ -83,41 +83,45 @@ for k, (cy, cx) in enumerate(nd.center_of_mass(land, lab, range(1, n + 1))):
     if np.hypot(cx / N - .5, cy / N - .5) < .12:
         mt[lab == k + 1] *= 0.5  # 卡莫瑞亚：中央平原
 
-# 3. 初始地形（单位：格，即高度图一个像素的边长）
+# 3. 初始地形：在 2048² 上做（高度图一个像素 = 一「格」），海岸由 1024 的遮罩模糊后放大再取阈值，轮廓平滑
+M = 2 * N
+up = lambda a, order=1: nd.zoom(a.astype(np.float32), 2, order=order)
+land2 = up(nd.gaussian_filter(land.astype(np.float32), 1.2)) > 0.5
+mt2, forest2, snow2 = np.clip(up(mt), 0, 1), np.clip(up(forest), 0, 1) * land2, np.clip(up(snow), 0, 1) * land2
 rng = np.random.default_rng(1077)
 def fbm(octaves, base):
-    s, a, total = np.zeros((N, N)), 1.0, 0.0
+    s, a, total = np.zeros((M, M)), 1.0, 0.0
     for o in range(octaves):
-        z = nd.gaussian_filter(rng.standard_normal((N, N)), base / 2 ** o, mode='wrap')
+        z = nd.gaussian_filter(rng.standard_normal((M, M)), base / 2 ** o, mode='wrap')
         s += z / (z.std() + 1e-9) * a; total += a; a *= 0.5
     return s / total
-dist = nd.distance_transform_edt(land)
-coast = 1 - np.exp(-dist / 10)
-plains = 1 - np.exp(-dist / 45)
-ridges = np.clip(1 - np.abs(fbm(6, 56)) * 0.8, 0, 1) ** 2.5
-C = 0.137  # 格子边长（世界单位）：陆地图边长 140 / 1024
-h0 = coast * (0.18 + 0.5 * plains + 0.2 * fbm(6, 80) * plains) + mt * (1.6 + 2.4 * ridges)
-h0 = np.where(land, np.maximum(h0, 0.02), -0.3) / C
+dist = nd.distance_transform_edt(land2)
+coast = 1 - np.exp(-dist / 20)
+plains = 1 - np.exp(-dist / 90)
+ridges = np.clip(1 - np.abs(fbm(7, 112)) * 0.8, 0, 1) ** 2.5
+C = 140.4 / M  # 格子边长（世界单位）
+h0 = coast * (0.18 + 0.5 * plains + 0.2 * fbm(7, 160) * plains) + mt2 * (1.6 + 2.4 * ridges)
+h0 = np.where(land2, np.maximum(h0, 0.02), -0.3) / C
 
 # 4. 侵蚀、河流与湖泊
-h1, _ = stream_power(h0.astype(np.float64), land, mt * 0.8 * land, iters=60, k=0.02)
-erode(h1, land.astype(np.float64), 1500000, 7)
-h1 = np.where(land, np.maximum(h1, 0.02 / C), -0.3 / C)
-filled = fill_depressions(h1, ~land)
-acc = flow_accumulation(filled, land)
-river = np.clip((np.log(np.maximum(acc, 1)) - np.log(300)) / 3.2, 0, 1)
-river = np.maximum(river, nd.grey_dilation(river, size=2) * 0.6) * land
-lake = nd.gaussian_filter((((filled - h1) * C > 0.12) & land).astype(np.float32), 1.0)
+h1, _ = stream_power(h0.astype(np.float64), land2, mt2 * 1.6 * land2, iters=70, k=0.02)
+erode(h1, land2.astype(np.float64), 6000000, 7, radius=4)
+h1 = np.where(land2, np.maximum(h1, 0.02 / C), -0.3 / C)
+filled = fill_depressions(h1, ~land2)
+acc = flow_accumulation(filled, land2)
+river = np.clip((np.log(np.maximum(acc, 1)) - np.log(1200)) / 3.2, 0, 1)
+river = np.maximum(river, nd.grey_dilation(river, size=3) * 0.6) * land2
+lake = nd.gaussian_filter((((filled - h1) * C > 0.12) & land2).astype(np.float32), 1.5)
 water = np.clip(np.maximum(river, lake), 0, 1)
-height = np.where(land, h1, 0)
-height = np.clip(height / np.percentile(height[land], 99.7), 0, 1) * land
+height = np.where(land2, h1, 0)
+height = np.clip(height / np.percentile(height[land2], 99.7), 0, 1) * land2
 scaled = height * 255
 hi = np.floor(scaled)
-lo = np.minimum(np.round((scaled - hi) * 16), 15) * 16  # 小数部分取 4 位（共 12 位高度），足够消除台阶，体积也小得多
-rgb = np.dstack([hi, lo, np.round(forest * 255)]).astype('uint8')
+lo = np.minimum(np.round((scaled - hi) * 4), 3) * 64  # 小数部分取 2 位（共 10 位高度）：足够消除台阶，体积也小得多
+rgb = np.dstack([hi, lo, np.zeros_like(hi)]).astype('uint8')
 Image.fromarray(rgb, 'RGB').save(OUT, lossless=True, quality=100, method=6)
-cover = np.dstack([water, snow, np.zeros_like(snow)])
-Image.fromarray((cover * 255).round().astype('uint8'), 'RGB').save(COVER, lossless=True, quality=100, method=6)
+cover = np.dstack([water, snow2, forest2])
+Image.fromarray((cover * 255).round().astype('uint8'), 'RGB').resize((N, N), Image.LANCZOS).save(COVER, lossless=True, quality=100, method=6)
 
 # 色调：去掉笔触，海上延伸最近的陆地颜色，边缘不会混进羊皮纸色
 small = (img * 255).astype('uint8')
@@ -148,4 +152,4 @@ with open(TOWNS, 'w', encoding='utf-8', newline='\n') as f:
     top = towns[0][2] if towns else 1
     for u, v, sz in towns: f.write(f'  [{u:.2f}, {v:.2f}, {min(1, (sz / top) ** 0.5):.2f}],\n')
     f.write('];\n')
-print(f'地形图已写入 {OUT}（{N}×{N}），陆地约占图内 {land[inside].mean() * 100:.0f}%；色调图 {TINT}；城镇 {len(towns)} 处。')
+print(f'地形图已写入 {OUT}（{M}×{M}），陆地约占图内 {land[inside].mean() * 100:.0f}%；色调图 {TINT}；城镇 {len(towns)} 处。')

@@ -311,11 +311,31 @@ float elevation(vec2 uv){
   return h * uAmp + (tn(uv * uSize * 3.0) - 0.5) * 0.03 * smoothstep(0.01, 0.05, h) - water * 0.05;
 }
 // 片元里再加一层只影响光照的细节：坡面细沟、林冠一团团的树冠
-float micro(vec2 uv, float h, float forest){
-  vec2 w = uv * uSize;
-  float slopeDetail = fbm(w * 2.2) * 0.05 + (1.0 - abs(tn(w * 4.0) * 2.0 - 1.0)) * 0.025;
-  float crowns = tn(w * 16.0) * 0.03 + tn(w * 7.0) * 0.02;
-  return (slopeDetail + crowns * forest) * smoothstep(0.01, 0.06, h);
+// 顺坡的细沟（「侵蚀滤镜」的思路，按原理自写）：条纹沿最陡下坡方向延伸、在横坡方向起伏，
+// 网格上每格取随机相位，四格按位置混合，避免出现无限长的直线。只改法线，返回高度对 w 的梯度。
+// 频率高到一个像素放不下时淡出，避免远处闪烁。
+vec2 gullies(vec2 w, vec2 down, float amount, vec2 dwx, vec2 dwy){ // dwx、dwy：w 的屏幕导数（在分支外求）
+  vec2 across = vec2(-down.y, down.x);
+  float foot = abs(dot(dwx, across)) + abs(dot(dwy, across)); // 一个像素在横坡方向覆盖的长度
+  vec2 grad = vec2(0.0);
+  float freq = 1.1, amp = 0.045;
+  for (int o = 0; o < 2; o++) {
+    vec2 q = w * freq * 0.5;
+    vec2 i = floor(q), f = fract(q);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float fade = 1.0 - smoothstep(0.12, 0.3, foot * freq); // 每像素超过约 0.2 个周期就淡出，避免闪成噪点
+    for (int k = 0; k < 4; k++) {
+      vec2 cell = i + vec2(float(k - (k / 2) * 2), float(k / 2));
+      float wt = mix(1.0 - u.x, u.x, float(k - (k / 2) * 2)) * mix(1.0 - u.y, u.y, float(k / 2));
+      float phase = th(cell + float(o) * 17.0) * 6.2831853;
+      // 相对格子中心的局部坐标：坡向在像素间的细微抖动不会被放大成相位的跳变
+      float x = dot(w - (cell + 0.5) / (freq * 0.5), across) * freq * 6.2831853 + phase;
+      // 截面取平滑的正弦：尖底的沟在一个像素内正负翻转，会闪成黑点
+      grad += wt * fade * amp * cos(x) * freq * 6.2831853 * across;
+    }
+    freq *= 2.1; amp *= 0.42;
+  }
+  return grad * amount;
 }
 `;
 export const landVertex = /* glsl */ `
@@ -346,32 +366,49 @@ varying vec3 vWorld;
 varying float vLift;
 void main(){
   float h = H(vUv);
-  float land = smoothstep(0.003, 0.02, h);
+  // 海岸抗锯齿：按屏幕上高度的变化率取过渡宽度
+  float fw = fwidth(h) * 1.2 + 0.0008;
+  vec2 dwx = dFdx(vUv * uSize), dwy = dFdy(vUv * uSize); // 屏幕导数在 discard 之前求
+  float pix = length(abs(dwx) + abs(dwy));
+  float land = smoothstep(0.006 - fw, 0.006 + fw, h);
   if (land < 0.01 || uInside < 0.001) discard;
   vec2 w = vUv * uSize;
   vec3 cover = texture2D(uCover, vUv).rgb;
-  float forestData = texture2D(uHeight, vUv).b;
+  float forestData = cover.b;
   // 法线：地面高度做中心差分，再叠细节层（更小的步长）
   vec2 e = vec2(uTexel.x * 1.25, 0.0);
   float ex = elevation(vUv + e.xy) - elevation(vUv - e.xy);
   float ez = elevation(vUv + e.yx) - elevation(vUv - e.yx);
   float span = 2.0 * e.x * uSize / SHADE_X; // 光照用的起伏放大几倍（地形本身不放大）：山谷与河道读得清，又不像模型
-  float forest = smoothstep(0.12, 0.6, forestData + (fbm(w * 1.1) - 0.5) * 0.3 + (tn(w * 7.0) - 0.5) * 0.12);
-  vec2 f = vec2(uTexel.x * 0.35, 0.0);
-  float fx = micro(vUv + f.xy, h, forest) - micro(vUv - f.xy, h, forest), fz = micro(vUv + f.yx, h, forest) - micro(vUv - f.yx, h, forest);
-  float fspan = 2.0 * f.x * uSize;
-  vec3 N = normalize(vec3(-ex / span - fx / fspan, 1.0, ez / span + fz / fspan));
+  float forest = smoothstep(0.12, 0.6, forestData + (fbm(w * 1.1) - 0.5) * 0.3 + (fbm(w * 3.7 + 9.0) - 0.5) * 0.1);
+  vec2 slopeV = vec2(ex, -ez) / span; // 地面高度对世界 x、z 的变化率（z 朝南为正；纹理 v 朝北）
+  float steep = length(slopeV);
+  vec2 down = steep > 1e-5 ? -slopeV / steep : vec2(0.0, 1.0);
+  vec2 gg = gullies(w * vec2(1.0, -1.0), down * vec2(1.0, -1.0), smoothstep(0.04, 0.35, steep) * (1.0 - forest * 0.7) * smoothstep(0.01, 0.05, h), dwx * vec2(1.0, -1.0), dwy * vec2(1.0, -1.0));
+  // 林冠：只在林地，一团团细小的明暗，远处淡出
+  float canopyFade = (1.0 - smoothstep(0.02, 0.05, pix)) * forest; // 只在很近时才有，否则细到一个像素以下会变成黑点
+  vec2 cw = w * 9.0;
+  vec2 crown = vec2(tn(cw + vec2(0.5, 0.0)) - tn(cw - vec2(0.5, 0.0)), tn(cw + vec2(0.0, 0.5)) - tn(cw - vec2(0.0, 0.5))) * 0.18 * canopyFade;
+  vec3 N = normalize(vec3(-slopeV.x - gg.x - crown.x, 1.0, -slopeV.y - gg.y - crown.y));
   float slope = 1.0 - N.y;
 
   // 地表材质
   vec3 tint = texture2D(uTint, vUv).rgb;
-  float n1 = fbm(w * 1.1), n2 = tn(w * 9.0), n3 = tn(w * 2.6);
-  vec3 grass = mix(vec3(0.07, 0.1, 0.035), tint * tint * 0.85, 0.5) * (0.82 + 0.36 * n1);
+  // 地形结构：比周围高的是山脊、低的是谷底（两个尺度）；水边更湿
+  vec2 b1 = texture2D(uHeight, vUv, 2.5).rg, b2 = texture2D(uHeight, vUv, 4.5).rg;
+  float curv = (h - (b1.r + b1.g / 256.0)) * 45.0 + (h - (b2.r + b2.g / 256.0)) * 14.0;
+  float ridge = smoothstep(0.05, 0.7, curv), valley = smoothstep(0.05, 0.7, -curv);
+  float wet = texture2D(uCover, vUv, 3.0).r;
+  float n1 = fbm(w * 1.1), n2 = mix(fbm(w * 5.0 + 3.0), 0.5, smoothstep(0.08, 0.25, pix)), n3 = tn(w * 2.6); // n2 远处取平均，免得闪烁成方块
+  vec3 grass = mix(vec3(0.07, 0.1, 0.035), tint * tint * 0.85, 0.5) * (0.85 + 0.3 * n1);
+  grass = mix(grass, grass * vec3(0.72, 0.9, 0.7), clamp(valley + wet * 1.5, 0.0, 1.0)); // 谷底与河岸：更深更绿
+  grass = mix(grass, tint * 0.55 * vec3(1.05, 1.0, 0.9), ridge * 0.45); // 山脊：偏干、偏亮
   vec3 canopy = vec3(0.026, 0.045, 0.02) * (0.6 + 0.8 * n2);
   vec3 rock = mix(vec3(0.17, 0.15, 0.13), tint * 0.4, 0.35) * (0.7 + 0.6 * n3);
   vec3 sand = vec3(0.44, 0.37, 0.25) * (0.85 + 0.3 * n2);
   vec3 snowC = vec3(0.68, 0.74, 0.82);
-  float rocky = smoothstep(0.42, 0.7, slope + (n3 - 0.5) * 0.12) * (1.0 - forest * 0.6) * smoothstep(0.15, 0.4, h);
+  forest = clamp(forest + valley * 0.12 - ridge * 0.2, 0.0, 1.0);
+  float rocky = clamp(smoothstep(0.42, 0.7, slope + (n3 - 0.5) * 0.12) + ridge * smoothstep(0.35, 0.7, h) * 0.6, 0.0, 1.0) * (1.0 - forest * 0.6) * smoothstep(0.15, 0.4, h);
   float beach = (1.0 - smoothstep(0.004, 0.012, h + (n2 - 0.5) * 0.004)) * 0.7;
   float snow = smoothstep(0.3, 0.75, cover.g * smoothstep(0.08, 0.45, h) + (n1 - 0.5) * 0.2) * (1.0 - smoothstep(0.55, 0.85, slope)) * 0.85;
   vec3 alb = mix(grass, canopy, forest);
@@ -418,7 +455,7 @@ void main(){
   col += uGold * vLift * coast * 0.5;
   // 河谷里的薄雾
   float mist = (1.0 - smoothstep(0.15, 0.9, vWorld.y - uBaseY)) * smoothstep(0.45, 0.75, fbm(w * 0.16 + uTime * vec2(0.02, 0.008))) * smoothstep(0.02, 0.1, h);
-  col = mix(col, vec3(0.14, 0.18, 0.2), mist * 0.3 * (1.0 - vLift * 0.7));
+  col = mix(col, vec3(0.14, 0.18, 0.2), mist * (0.15 + 0.35 * valley) * (1.0 - vLift * 0.7));
   // 空气透视：随距离吞进夜色，越远越偏青
   float dist = distance(cameraPosition, vWorld);
   float haze = 1.0 - exp(-max(dist - 18.0, 0.0) * 0.012);

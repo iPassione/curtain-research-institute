@@ -155,7 +155,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   const anyHot = { value: 0 };
   const octaves = { OCTAVES: tier === 'full' ? 5 : 3 };
   const landUniforms = {
-    uTint: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 1024, 1 / 1024) },
+    uTint: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uTexel: { value: new Vector2(1 / 2048, 1 / 2048) },
     uTime: shared.uTime, uAnyHot: anyHot, uBaseY: { value: LAND_Y }, uCover: { value: null as Texture | null }, uCurve: curve,
     uAmp: { value: LAND_AMP }, uSize: { value: LAND }, uInside: shared.uInside, uReady: { value: 0 }, uShadow: { value: 0 },
     // 主光从东北侧斜照：镜头从南往北看时山体一侧亮、一侧落影，起伏最清楚；与天上月亮同在右侧
@@ -166,7 +166,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   };
   (sea.material as ShaderMaterial).uniforms.uRegions = landUniforms.uRegions;
   (sea.material as ShaderMaterial).uniforms.uLift.value = lifts;
-  const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 384 : 200, tier === 'full' ? 384 : 200);
+  const landGeometry = new PlaneGeometry(LAND, LAND, tier === 'full' ? 512 : 256, tier === 'full' ? 512 : 256);
   landGeometry.rotateX(-Math.PI / 2);
   const chart = new Mesh(landGeometry, new ShaderMaterial({ uniforms: landUniforms, vertexShader: landVertex, fragmentShader: landFragment, transparent: true, defines: octaves }));
   chart.position.set(0, LAND_Y, LAND_Z);
@@ -216,7 +216,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
   });
   let disposed = false, loaded = 0;
   const loader = new TextureLoader();
-  const done = () => { if (++loaded === 4) landUniforms.uReady.value = 1; };
+  const done = () => { if (++loaded === 4) { landUniforms.uReady.value = 1; warm = 2; } };
   loader.load('assets/data/nautical-cover.webp', tex => {
     if (disposed) { tex.dispose(); return; }
     landUniforms.uCover.value = tex; done();
@@ -292,13 +292,9 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     landUniforms.uShadow.value = full ? 1 : 0;
   };
   applyTier();
-  // 预先编译穹顶之下的着色器（支持时异步）：否则进入穹顶的那一刻才编译，画面会卡一下
-  {
-    const hidden = [chart, towns, ...cloudLayers];
-    hidden.forEach(o => { o.visible = true; });
-    try { renderer.compileAsync(scene, camera).catch(() => { /* 编译失败时照常在首次绘制时编译 */ }); } catch { /* 同上 */ }
-    hidden.forEach(o => { o.visible = false; });
-  }
+  // 预热：数据图载入后，穹顶之下的物体先「隐形地」画两帧（陆地透明、灯火与云不出光），
+  // 让着色器按实际的渲染管线编译、纹理上传到显卡；否则进入穹顶的那一刻会卡住半秒以上。
+  let warm = 0, warmMembrane = 2; // 薄膜同理：第一幕就隐形地画两帧，显形时不再卡顿
 
   // 指针涟漪：只在薄膜已显形时响应；节流到每 140ms 至多一个。
   const raycaster = new Raycaster();
@@ -358,7 +354,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
     look.set(0, 15 + 3 * a2, 0);
     lookIn.set(0, 8, -90);
     lookDown.set(0, 0, LAND_Z + (portrait ? 1 - 2 * a5 : -12 - 2 * a5));
-    lookDown.lerp(focus, 0.22 * focusAmt); // 指着某块大陆时，视线缓缓偏向它
+    lookDown.lerp(focus, 0.14 * focusAmt); // 指着某块大陆时，视线缓缓偏向它
     look.lerp(lookIn, k1).lerp(lookDown, a4);
 
     // 视角：推近时只轻微收窄；穿过之后在一段滚动距离里慢慢撑开（不再一下闪进去）；俯瞰时略收
@@ -462,8 +458,10 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
       most = Math.max(most, Math.min(1, lifts[k]));
     }
     anyHot.value = most;
-    if (h >= 0) focus.lerp(placeWorld[h], focusAmt < 0.02 ? 1 : 1 - Math.exp(-dt * 4));
-    focusAmt += ((h >= 0 ? 1 : 0) - focusAmt) * (1 - Math.exp(-dt * 2.2));
+    // 镜头只在指着地面时偏向那块大陆；指着地名时不动，否则地名会从鼠标下面滑走
+    const lean = labelHot < 0 && landHot >= 0 ? landHot : -1;
+    if (lean >= 0) focus.lerp(placeWorld[lean], focusAmt < 0.02 ? 1 : 1 - Math.exp(-dt * 4));
+    focusAmt += ((lean >= 0 ? 1 : 0) - focusAmt) * (1 - Math.exp(-dt * 2.2));
     places.forEach((pl, k) => { pl.el.classList.toggle('is-live', live); pl.el.classList.toggle('is-hot', k === h); });
     stageEl?.classList.toggle('is-picking', live && landHot >= 0);
     if (wasLive && !live) stageEl?.classList.remove('is-picking');
@@ -522,14 +520,16 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
         renderer.render(scene, camera);
         renderer.setRenderTarget(null);
       }
-      membrane.visible = membraneFar.visible = revealed;
-      chart.visible = shared.uInside.value > 0.001;
+      membrane.visible = membraneFar.visible = revealed || warmMembrane > 0;
+      if (warmMembrane > 0) warmMembrane--;
+      chart.visible = shared.uInside.value > 0.001 || warm > 0;
       const landOn = shared.uInside.value * landUniforms.uReady.value;
       curve.value = CURVE * shared.uInside.value;
       (sea.material as ShaderMaterial).uniforms.uLandOn.value = landOn;
       townUniforms.uOn.value = landOn;
       towns.visible = chart.visible;
       for (const c of cloudLayers) { (c.material as ShaderMaterial).uniforms.uOn.value = landOn; c.visible = chart.visible && (c === cloudLayers[0] || tier === 'full'); }
+      if (warm > 0) warm--;
       composer.render(dt);
       updatePlaces();
       updateHot(dt);
