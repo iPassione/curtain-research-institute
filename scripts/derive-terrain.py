@@ -1,25 +1,32 @@
-# 首页「穹顶之下」五大陆的地形高度图（离线一次性运行，产物提交进仓库）：
-#   python scripts/derive-terrain.py
-# 与地理馆浮雕用的 nautical-height.png 分开：那张只求「羊皮纸上隆起」，这张要撑得起斜俯视的立体地形。
-# 方法（只读航海图本身，不添加图上没有的地物）：
+# 首页「穹顶之下」五大陆的地形（离线一次性运行，产物提交进仓库）：
+#   python scripts/derive-terrain.py        （需要 numpy、scipy、Pillow、numba；约一分钟）
+# 与地理馆浮雕用的 nautical-height.png 分开：那张只求「羊皮纸上隆起」，这张要撑得起写实的大陆。
+# 只读航海图本身，不添加图上没有的地物：
 #   1. 陆地遮罩：与羊皮纸底色的色差 + 局部纹理密度（陆地画满山林城镇），去掉近岸的蓝色浅海；
 #      开闭运算去碎点、补内部空洞，排除罗盘与上下两处纹饰。
-#   2. 海岸抬升：到海岸的距离 → 1 - exp(-d/18)，海岸是缓坡，内陆逐渐升高。
-#   3. 山地：细尺度亮度方差（山的笔触密），绿色林地压低，平滑成连绵的山体。
-#   4. 地表：林地（偏绿的深色笔触）、积雪（低饱和的亮白），模糊成连片的分布；城镇取红屋顶聚成的团块。
+#   2. 地表：林地（偏绿的深色笔触）、积雪（低饱和的亮白）；山区取山的笔触密集处（林地压低）。
+#   3. 初始地形：离海岸越远越高的缓坡平原 + 山区的抬升，叠少量噪声作为起伏的种子。
+#      卡莫瑞亚在航海图上是中央平原，山区抬升减半。
+#   4. 侵蚀（scripts/terrain_erosion.py）：先做河流下切（Braun & Willett 2013），冲出树枝状的河谷与冲积平原；
+#      再用水滴侵蚀补上坡面的细沟。最后按汇水面积得到河流，填洼的深度得到湖泊。
 #   输出：
-#     nautical-terrain.webp 1024² RGB（无损 WebP）：R 高度（黑为海面）、G 林地、B 积雪
+#     nautical-terrain.webp 1024² RGB（无损 WebP）：R、G 高度的整数与小数部分（h×255 = R + G/256，G 取 4 位；两通道分别插值后相加仍精确）、B 林地
+#     nautical-cover.webp   1024² RGB（无损 WebP）：R 河流与湖泊、G 积雪
 #     nautical-regions.png  256² 灰度：每处属于哪块大陆（序号 × 60），供选中时整块抬起
 #     nautical-tint.png     256² RGB：陆地的整体色调（中值滤波去掉笔触后再模糊，海上延伸最近陆地的颜色）
 #     src/gl/scenes/terrain-towns.ts  城镇灯火的位置与大小（图上百分比）
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from terrain_erosion import erode, fill_depressions, flow_accumulation, stream_power
 
 SRC = 'assets-src/nautical-chart.png'
 OUT = 'assets-src/data/nautical-terrain.webp'
 TINT = 'assets-src/data/nautical-tint.png'
 REGIONS = 'assets-src/data/nautical-regions.png'
+COVER = 'assets-src/data/nautical-cover.webp'
 TOWNS = 'src/gl/scenes/terrain-towns.ts'
 N = 1024
 
@@ -56,21 +63,7 @@ keep = np.zeros(n + 1, bool)
 keep[1:] = size > N * N * 0.0005
 land = keep[lab]
 
-# 2. 海岸抬升
-rise = 1 - np.exp(-nd.distance_transform_edt(land) / 18)
-
-# 3. 山地
-green = np.clip((g - np.maximum(r, b)) * 4, 0, 1)
-fine = nd.gaussian_filter(lum ** 2, 1.5) - nd.gaussian_filter(lum, 1.5) ** 2
-mount = nd.gaussian_filter(np.sqrt(np.maximum(fine, 0)) * (1 - 0.5 * nd.gaussian_filter(green, 3)), 15)
-lo, hi = np.percentile(mount[land], [5, 97])
-mount = np.clip((mount - lo) / (hi - lo), 0, 1)
-
-height = rise * (0.25 + 0.75 * mount ** 1.6)
-height = nd.gaussian_filter(nd.gaussian_filter(height, 2.0) * land, 1.4)
-height /= height.max()
-
-# 4. 地表
+# 2. 地表与山区
 mx, mn = np.maximum(np.maximum(r, g), b), np.minimum(np.minimum(r, g), b)
 sat = (mx - mn) / (mx + 1e-4)
 inner = nd.binary_erosion(land, iterations=3)
@@ -78,8 +71,53 @@ forest = nd.gaussian_filter(((g > r * 0.97) & (g > b * 1.2) & (lum < 0.5)).astyp
 forest = np.clip(forest / np.percentile(forest[land], 99), 0, 1)
 snow = nd.gaussian_filter(np.clip((lum - 0.68) * 5, 0, 1) * np.clip(1 - sat * 3, 0, 1), 3) * land
 snow = np.clip(snow / np.percentile(snow[land], 99.5), 0, 1)
-rgb = np.dstack([height, forest, snow])
-Image.fromarray((rgb * 255).round().astype('uint8'), 'RGB').save(OUT, lossless=True, quality=100, method=6)
+green = np.clip((g - np.maximum(r, b)) * 4, 0, 1)
+fine = nd.gaussian_filter(lum ** 2, 1.5) - nd.gaussian_filter(lum, 1.5) ** 2
+mount = nd.gaussian_filter(np.sqrt(np.maximum(fine, 0)) * (1 - 0.5 * nd.gaussian_filter(green, 3)), 15)
+lo, hi = np.percentile(mount[land], [5, 97])
+mount = np.clip((mount - lo) / (hi - lo), 0, 1)
+mt = np.clip((mount - 0.35) / 0.5, 0, 1)
+mt = nd.gaussian_filter(mt * mt * (3 - 2 * mt) * (1 - 0.6 * forest), 3)
+lab, n = nd.label(land)
+for k, (cy, cx) in enumerate(nd.center_of_mass(land, lab, range(1, n + 1))):
+    if np.hypot(cx / N - .5, cy / N - .5) < .12:
+        mt[lab == k + 1] *= 0.5  # 卡莫瑞亚：中央平原
+
+# 3. 初始地形（单位：格，即高度图一个像素的边长）
+rng = np.random.default_rng(1077)
+def fbm(octaves, base):
+    s, a, total = np.zeros((N, N)), 1.0, 0.0
+    for o in range(octaves):
+        z = nd.gaussian_filter(rng.standard_normal((N, N)), base / 2 ** o, mode='wrap')
+        s += z / (z.std() + 1e-9) * a; total += a; a *= 0.5
+    return s / total
+dist = nd.distance_transform_edt(land)
+coast = 1 - np.exp(-dist / 10)
+plains = 1 - np.exp(-dist / 45)
+ridges = np.clip(1 - np.abs(fbm(6, 56)) * 0.8, 0, 1) ** 2.5
+C = 0.137  # 格子边长（世界单位）：陆地图边长 140 / 1024
+h0 = coast * (0.18 + 0.5 * plains + 0.2 * fbm(6, 80) * plains) + mt * (1.6 + 2.4 * ridges)
+h0 = np.where(land, np.maximum(h0, 0.02), -0.3) / C
+
+# 4. 侵蚀、河流与湖泊
+h1, _ = stream_power(h0.astype(np.float64), land, mt * 0.8 * land, iters=60, k=0.02)
+erode(h1, land.astype(np.float64), 1500000, 7)
+h1 = np.where(land, np.maximum(h1, 0.02 / C), -0.3 / C)
+filled = fill_depressions(h1, ~land)
+acc = flow_accumulation(filled, land)
+river = np.clip((np.log(np.maximum(acc, 1)) - np.log(300)) / 3.2, 0, 1)
+river = np.maximum(river, nd.grey_dilation(river, size=2) * 0.6) * land
+lake = nd.gaussian_filter((((filled - h1) * C > 0.12) & land).astype(np.float32), 1.0)
+water = np.clip(np.maximum(river, lake), 0, 1)
+height = np.where(land, h1, 0)
+height = np.clip(height / np.percentile(height[land], 99.7), 0, 1) * land
+scaled = height * 255
+hi = np.floor(scaled)
+lo = np.minimum(np.round((scaled - hi) * 16), 15) * 16  # 小数部分取 4 位（共 12 位高度），足够消除台阶，体积也小得多
+rgb = np.dstack([hi, lo, np.round(forest * 255)]).astype('uint8')
+Image.fromarray(rgb, 'RGB').save(OUT, lossless=True, quality=100, method=6)
+cover = np.dstack([water, snow, np.zeros_like(snow)])
+Image.fromarray((cover * 255).round().astype('uint8'), 'RGB').save(COVER, lossless=True, quality=100, method=6)
 
 # 色调：去掉笔触，海上延伸最近的陆地颜色，边缘不会混进羊皮纸色
 small = (img * 255).astype('uint8')
