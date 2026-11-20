@@ -32,7 +32,8 @@ python -m http.server 8765 --bind 127.0.0.1 --directory dist
 ├── index.html / src/        页面入口与源码（路由、页面、交互功能、三维场景、样式）
 ├── content/                 馆藏、展室、术语表等内容数据，以及生成脚本的产物
 ├── assets-src/              原始图片、SVG 图版与数据图
-├── public/                  原样发布的文件：自托管字体、第三方许可
+├── public/                  原样发布的文件：自托管字体（已按站内文字裁剪）、第三方许可
+├── fonts-src/               字体原件，npm run fonts 裁剪到 public/fonts/
 ├── scripts/                 内容与图片构建、本地服务、高度图派生
 ├── tests/                   Playwright 测试与截图工具
 ├── dist/                    构建产物，也是 Sites 发布的静态目录（提交，但不要手工修改）

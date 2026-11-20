@@ -1,4 +1,4 @@
-// 一次性工具：把站点原先从 Google Fonts 加载的字体切片原样下载到 public/fonts/，
+// 一次性工具：把站点原先从 Google Fonts 加载的字体切片原样下载到 fonts-src/（再由 scripts/subset-fonts.py 按站内文字裁剪到 public/fonts/），
 // 并生成指向本地文件的 fonts.css。切片（unicode-range）与字形文件与原站完全一致。
 // 用法：node scripts/fetch-fonts.mjs   （需要联网；产物已提交，日常构建无需运行）
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 
 const CSS_URL = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
-const out = 'public/fonts';
+const out = 'fonts-src';
 fs.mkdirSync(out, { recursive: true });
 let css = await (await fetch(CSS_URL, { headers: { 'user-agent': UA } })).text();
 const urls = [...new Set(css.match(/https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2/g))];

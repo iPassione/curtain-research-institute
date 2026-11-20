@@ -309,3 +309,24 @@ test('不启用三维时：首页主视觉是三维场景的静态画，「穹�
   await expect(page).toHaveURL(/page=geography&continent=1#continents/);
   await expect(page.locator('[data-chart-place="1"]')).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('裁剪后的中文字体覆盖站内所有文字（内容有增改却没重新运行 npm run fonts 时这里会失败）', () => {
+  const css = fs.readFileSync('public/fonts/fonts.css', 'utf8');
+  const covered = (family: string) => {
+    const set = new Set<number>();
+    for (const block of css.split('@font-face').filter(b => b.includes(`'${family}'`))) {
+      const m = block.match(/unicode-range:\s*([^;]+);/);
+      if (!m) continue;
+      for (const part of m[1].split(',')) {
+        const [a, b] = part.trim().replace(/U\+/g, '').split('-').map(x => parseInt(x, 16));
+        for (let c = a; c <= (b ?? a); c++) set.add(c);
+      }
+    }
+    return set;
+  };
+  const serif = covered('Noto Serif SC'), sans = covered('Noto Sans SC');
+  const text = ['public/data/manifest.json', 'public/data/search.json', ...fs.readdirSync('public/data/articles').map(f => `public/data/articles/${f}`)]
+    .map(f => fs.readFileSync(f, 'utf8')).join('');
+  const missing = [...new Set([...text].filter(ch => /[一-鿿]/.test(ch) && (!serif.has(ch.codePointAt(0)!) || !sans.has(ch.codePointAt(0)!))))];
+  expect(missing.join(''), '这些字不在裁剪后的字体里，请运行 npm run fonts').toBe('');
+});

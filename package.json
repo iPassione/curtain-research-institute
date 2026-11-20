@@ -8,6 +8,7 @@
     "content": "node build-editorial.mjs && node build-collections.mjs && node build-humanized.cjs && node scripts/build-content.mjs",
     "build:content": "node scripts/build-content.mjs",
     "build:images": "node scripts/build-images.mjs",
+    "fonts": "python scripts/subset-fonts.py",
     "build": "node scripts/build-content.mjs && node scripts/build-images.mjs && tsc && vite build",
     "dev": "node scripts/build-content.mjs && vite",
     "preview": "node scripts/serve.mjs dist 8765",
