@@ -1,0 +1,38 @@
+# 自动测试：每次推送到 main、每个拉取请求，都对提交进仓库的 dist/ 跑一遍完整的 Chromium 测试
+# （普通页面 + 五组三维场景测试；CI 里没有显卡，三维由 CPU 模拟，较慢但能发现报错与交互问题）。
+# 失败时上传 test-results/（截图与错误上下文），在本次运行的 Artifacts 里下载查看。
+name: 测试
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: 类型检查
+        run: npx tsc --noEmit -p .
+      - name: Playwright 测试
+        run: npx playwright test
+      - name: 上传失败记录
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
