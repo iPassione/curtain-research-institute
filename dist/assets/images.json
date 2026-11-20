@@ -39,6 +39,22 @@
    1536
   ]
  },
+ "journey/continents": {
+  "width": 1920,
+  "height": 1080,
+  "sizes": [
+   800,
+   1920
+  ]
+ },
+ "journey/sea": {
+  "width": 1920,
+  "height": 1080,
+  "sizes": [
+   800,
+   1920
+  ]
+ },
  "nautical-chart": {
   "width": 1254,
   "height": 1254,

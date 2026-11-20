@@ -299,3 +299,13 @@ test('地理馆带 continent 参数：直接展开那块大陆；不合法的参
   await page.goto('/?page=geography&continent=9&gl=static');
   await expect(page.locator('[data-chart-place="0"]')).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('不启用三维时：首页主视觉是三维场景的静态画，「穹顶之下」静态画上的地名可以点进地理馆', async ({ page }) => {
+  await page.goto('/?gl=static');
+  expect(await page.locator('.hero-image').evaluate(el => getComputedStyle(el).backgroundImage)).toContain('journey/sea-1920');
+  const links = page.locator('.dome-atlas .dome-place');
+  await expect(links).toHaveCount(5);
+  await links.nth(1).click();
+  await expect(page).toHaveURL(/page=geography&continent=1#continents/);
+  await expect(page.locator('[data-chart-place="1"]')).toHaveAttribute('aria-pressed', 'true');
+});
