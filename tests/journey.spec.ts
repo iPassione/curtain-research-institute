@@ -122,12 +122,16 @@ test('穹顶之下：悬停大陆抬起并点亮地名，点进地理馆并展�
   await page.mouse.move(box.x + box.width / 2, box.y + box.height + 40);
   await expect(places.first()).toHaveClass(/is-hot/, { timeout: 10000 });
   await expect(page.locator('.journey-stage')).toHaveClass(/is-picking/);
-  // 指到地名上：换成那块大陆
-  await places.nth(2).hover();
-  await expect(places.nth(2)).toHaveClass(/is-hot/);
+  // 指到地名上：换成那块大陆（挑一个离页头页脚都远的地名，靠边的地名会淡出）
+  const vh = page.viewportSize()!.height;
+  let pick = -1;
+  for (let i = 1; i < 5; i++) { const b = await places.nth(i).boundingBox(); if (b && b.y > 200 && b.y + b.height < vh - 150) { pick = i; break; } }
+  expect(pick).toBeGreaterThan(0);
+  await places.nth(pick).hover();
+  await expect(places.nth(pick)).toHaveClass(/is-hot/);
   await expect(places.first()).not.toHaveClass(/is-hot/);
-  await places.nth(2).click();
-  await expect(page).toHaveURL(/page=geography&continent=2#continents/);
-  await expect(page.locator('#continents .atlas-note h3')).toHaveText((await page.locator('[data-chart-place="2"] strong').textContent())!);
-  await expect(page.locator('[data-chart-place="2"]')).toHaveAttribute('aria-pressed', 'true');
+  await places.nth(pick).click();
+  await expect(page).toHaveURL(new RegExp(`page=geography&continent=${pick}#continents`));
+  await expect(page.locator('#continents .atlas-note h3')).toHaveText((await page.locator(`[data-chart-place="${pick}"] strong`).textContent())!);
+  await expect(page.locator(`[data-chart-place="${pick}"]`)).toHaveAttribute('aria-pressed', 'true');
 });

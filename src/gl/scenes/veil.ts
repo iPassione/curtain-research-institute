@@ -534,6 +534,7 @@ export function createVeilScene(renderer: WebGLRenderer, startTier: Tier, places
         renderer.setRenderTarget(null);
       }
       membrane.visible = membraneFar.visible = revealed || warmMembrane > 0;
+      lamp.visible = shared.uInside.value < 0.5; // 船灯在帷幕之外，进入穹顶后不再挂在地平线上
       if (warmMembrane > 0) warmMembrane--;
       chart.visible = shared.uInside.value > 0.001 || warm > 0;
       const landOn = shared.uInside.value * landUniforms.uReady.value;

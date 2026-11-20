@@ -1,4 +1,4 @@
-import{F as e,O as t,_ as n,j as r,k as i,m as a,t as o,y as s}from"./stage-kHJ78NE5.js";var c=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,l=`
+import{F as e,O as t,_ as n,j as r,k as i,m as a,t as o,y as s}from"./stage-DsLM7H9W.js";var c=`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,l=`
 uniform sampler2D uL0, uL1, uL2, uDepth, uLights;
 uniform float uCount, uV, uLightsOn, uTime, uStrength, uZoom;
 uniform vec2 uOffset, uSize;

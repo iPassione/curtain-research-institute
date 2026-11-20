@@ -13,11 +13,12 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { WebGLRenderer } from 'three';
 import type { GLScene } from '../stage';
 import type { Tier } from '../tier';
-import { arcFragment, arcVertex, groundFragment, groundVertex, reliefFragment, reliefVertex, rimFragment, rimVertex, tiltShader } from './chart-shaders';
+import { arcFragment, arcVertex, groundFragment, groundVertex, reliefFragment, reliefVertex, rimFragment, rimVertex, tiltShader, townFragment, townVertex } from './chart-shaders';
+import { TOWNS, VILLAGES } from './terrain-towns';
 
 const S = 40; // 航海图边长
 const DISC = S * 0.49; // 圆盘半径（含外圈花边）
-const AMP = 1.15; // 浮雕最高处（约为边长的 3%）
+const AMP = 1.0; // 浮雕最高处（约为边长的 2.5%，像一张立体沙盘）
 const lin = (hex: string) => new Color(hex);
 const deg = Math.PI / 180;
 
@@ -56,14 +57,14 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
   // 浮雕
   const centers = positions.map(([u, v]) => new Vector2(u / 100, 1 - v / 100));
   const reliefUniforms = {
-    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null },
-    uTexel: { value: new Vector2(1 / 512, 1 / 512) }, uAmp: { value: AMP }, uSize: { value: S },
+    uMap: { value: null as Texture | null }, uHeight: { value: null as Texture | null }, uCover: { value: null as Texture | null },
+    uTexel: { value: new Vector2(1 / 2048, 1 / 2048) }, uAmp: { value: AMP }, uSize: { value: S },
     uTime: { value: 0 }, uFocus: { value: 0 }, uHover: { value: 0 },
     uCenters: { value: centers }, uSel: { value: 0 }, uHot: { value: -1 },
     uLight: { value: lightLocal }, uInk: { value: lin('#5c4628') }, uShadowTint: { value: lin('#b9c3c8') },
     uSunCol: { value: new Color(1, 1, 1) }, uAmbient: { value: 0.7 }, uSunStr: { value: 0.42 }, uNight: { value: 0 },
   };
-  const reliefGeometry = new PlaneGeometry(S, S, tier === 'full' ? 320 : 160, tier === 'full' ? 320 : 160);
+  const reliefGeometry = new PlaneGeometry(S, S, tier === 'full' ? 400 : 200, tier === 'full' ? 400 : 200);
   reliefGeometry.rotateX(-Math.PI / 2);
   const relief = new Mesh(reliefGeometry, new ShaderMaterial({ uniforms: reliefUniforms, vertexShader: reliefVertex, fragmentShader: reliefFragment }));
   relief.visible = false;
@@ -83,6 +84,27 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.9;
   scene.add(ground);
+
+  // 城镇灯火：入夜后亮起
+  const townPos: number[] = [], townSize: number[] = [], townPhase: number[] = [], townBright: number[] = [];
+  let seed = 7;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (const [u, v, sz] of TOWNS) for (let i = 0, n = 2 + Math.round(sz * 5); i < n; i++) {
+    const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * (0.002 + sz * 0.005);
+    townPos.push(u / 100 + Math.cos(a) * r, 0, 1 - v / 100 + Math.sin(a) * r); townSize.push(1 + sz); townPhase.push(rand()); townBright.push(1);
+  }
+  for (const [u, v, sz] of VILLAGES) { townPos.push(u / 100, 0, 1 - v / 100); townSize.push(0.6 + sz); townPhase.push(rand()); townBright.push(0.4 + sz * 0.5); }
+  const townGeometry = new BufferGeometry();
+  townGeometry.setAttribute('position', new BufferAttribute(new Float32Array(townPos), 3));
+  townGeometry.setAttribute('aSize', new BufferAttribute(new Float32Array(townSize), 1));
+  townGeometry.setAttribute('aPhase', new BufferAttribute(new Float32Array(townPhase), 1));
+  townGeometry.setAttribute('aBright', new BufferAttribute(new Float32Array(townBright), 1));
+  const townUniforms = { uHeight: reliefUniforms.uHeight, uAmp: reliefUniforms.uAmp, uSize: reliefUniforms.uSize, uDpr: { value: 1 }, uTime: reliefUniforms.uTime, uOn: { value: 0 } };
+  const towns = new Points(townGeometry, new ShaderMaterial({ uniforms: townUniforms, vertexShader: townVertex, fragmentShader: townFragment, transparent: true, depthWrite: false, blending: AdditiveBlending }));
+  towns.frustumCulled = false;
+  towns.renderOrder = 1;
+  towns.visible = false;
+  group.add(towns);
 
   // 大陆锚点（物体空间），高度取浮雕的大致高处
   const local = positions.map(([u, v]) => new Vector3((u / 100 - 0.5) * S, AMP * 0.85, (v / 100 - 0.5) * S));
@@ -168,17 +190,21 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
   // 贴图
   let disposed = false, ready = 0;
   const loader = new TextureLoader();
-  const loaded = () => { if (++ready === 2) relief.visible = true; };
+  const loaded = () => { if (++ready === 3) relief.visible = towns.visible = true; };
   loader.load('assets/nautical-chart-1254.webp', t => {
     if (disposed) return t.dispose();
     t.colorSpace = SRGBColorSpace;
     t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     reliefUniforms.uMap.value = t; loaded();
   });
-  loader.load('assets/data/nautical-height.png', t => {
+  loader.load('assets/data/nautical-terrain.webp', t => {
     if (disposed) return t.dispose();
     t.magFilter = LinearFilter;
     reliefUniforms.uHeight.value = t; loaded();
+  });
+  loader.load('assets/data/nautical-cover.webp', t => {
+    if (disposed) return t.dispose();
+    reliefUniforms.uCover.value = t; loaded();
   });
 
   // 后期
@@ -211,6 +237,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
       composer.setPixelRatio(dpr);
       composer.setSize(w, h);
       tilt.uniforms.uTexel.value = [1 / (w * dpr), 1 / (h * dpr)];
+      townUniforms.uDpr.value = dpr;
     },
     frame(dt, time) {
       renderer.setClearColor(new Color(0x1c2126).lerp(new Color(0xc9b088), Math.min(1, Math.max(0, (Math.sin((((state.hour?.() ?? 15) - 6) / 12) * Math.PI) + 0.12) / 0.4))), 1);
@@ -234,6 +261,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
       reliefUniforms.uAmbient.value = 0.16 + 0.54 * day;
       reliefUniforms.uSunStr.value = 0.2 + 0.22 * day + 0.15 * dusk;
       reliefUniforms.uNight.value = 1 - day;
+      townUniforms.uOn.value = Math.max(0, 1 - day * 1.6); // 黄昏开始亮灯
       (groundUniforms.uInner.value as Color).copy(nightInner).lerp(groundInner, day);
       (groundUniforms.uOuter.value as Color).copy(nightOuter).lerp(groundOuter, day);
       (rimUniforms.uColor.value as Color).copy(rimColor).multiplyScalar(0.35 + 0.65 * day);
@@ -287,6 +315,7 @@ export function createChartScene(renderer: WebGLRenderer, startTier: Tier, posit
       composer.dispose();
       reliefUniforms.uMap.value?.dispose();
       reliefUniforms.uHeight.value?.dispose();
+      reliefUniforms.uCover.value?.dispose();
       scene.traverse(o => {
         const m = o as Mesh;
         m.geometry?.dispose();

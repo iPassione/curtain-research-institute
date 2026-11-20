@@ -1,9 +1,10 @@
 // 地理馆立体航海图的着色器。颜色在线性空间计算，OutputPass 转为 sRGB。
 import { NOISE } from './veil-shaders';
 
-// 浮雕：顶点按高度图抬升（圆盘外缘压平），片元用高度差求法线，侧光照出起伏。
+// 浮雕：与首页「穹顶之下」共用侵蚀后的地形（scripts/derive-terrain.py：高度 h = R + G/256），
+// 像一张按航海图做的立体沙盘：河谷与湖泊下凹、映着天光；圆盘外缘压平。片元求法线时把起伏放大，侧光照出山脊。
 export const reliefVertex = /* glsl */ `
-uniform sampler2D uHeight;
+uniform sampler2D uHeight, uCover;
 uniform float uAmp;
 varying vec2 vUv;
 varying vec3 vWorld;
@@ -11,7 +12,8 @@ void main(){
   vUv = uv;
   float edge = 1.0 - smoothstep(0.44, 0.47, length(uv - 0.5));
   vec3 p = position;
-  p.y += texture2D(uHeight, uv).r * uAmp * edge;
+  vec2 t = texture2D(uHeight, uv).rg;
+  p.y += ((t.r + t.g / 256.0) * uAmp - texture2D(uCover, uv).r * 0.03) * edge;
   vec4 w = modelMatrix * vec4(p, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
@@ -19,7 +21,7 @@ void main(){
 
 export const reliefFragment = /* glsl */ `
 ${NOISE}
-uniform sampler2D uMap, uHeight;
+uniform sampler2D uMap, uHeight, uCover;
 uniform vec2 uTexel;
 uniform float uAmp, uSize, uTime, uFocus, uHover, uAmbient, uSunStr, uNight;
 uniform vec3 uSunCol;
@@ -28,6 +30,7 @@ uniform int uSel, uHot;
 uniform vec3 uLight, uInk, uShadowTint;
 varying vec2 vUv;
 varying vec3 vWorld;
+float H(vec2 uv){ vec2 t = texture2D(uHeight, uv).rg; return t.r + t.g / 256.0; }
 int nearest(vec2 uv){
   int k = 0; float best = 1e9;
   for (int i = 0; i < 5; i++) { float d = distance(uv, uCenters[i]); if (d < best) { best = d; k = i; } }
@@ -37,12 +40,17 @@ void main(){
   vec2 c = vUv - 0.5;
   float r = length(c) * 2.0;
   if (r > 0.985) discard;
-  float h = texture2D(uHeight, vUv).r;
-  float hx = texture2D(uHeight, vUv + vec2(uTexel.x, 0.0)).r - texture2D(uHeight, vUv - vec2(uTexel.x, 0.0)).r;
-  float hz = texture2D(uHeight, vUv + vec2(0.0, uTexel.y)).r - texture2D(uHeight, vUv - vec2(0.0, uTexel.y)).r;
-  float k = uAmp / (2.0 * uSize);
-  vec3 N = normalize(vec3(-hx * k / uTexel.x, 1.0, hz * k / uTexel.y));
+  float h = H(vUv);
+  vec2 e = uTexel * 1.5;
+  float hx = H(vUv + vec2(e.x, 0.0)) - H(vUv - vec2(e.x, 0.0));
+  float hz = H(vUv + vec2(0.0, e.y)) - H(vUv - vec2(0.0, e.y));
+  float k = uAmp * 2.2 / (2.0 * uSize); // 光照用的起伏放大 2.2 倍：山脊与河谷读得清
+  vec3 N = normalize(vec3(-hx * k / e.x, 1.0, hz * k / e.y));
   vec3 col = texture2D(uMap, vUv).rgb;
+  // 地形的凹凸：谷底略暗、山脊略亮（与周围平均高度相比）
+  vec2 tb = texture2D(uHeight, vUv, 3.5).rg;
+  float around = tb.r + tb.g / 256.0;
+  col *= clamp(1.0 + (h - around) * 5.0, 0.8, 1.12);
 
   // 侧光照出浮雕；背光面略偏冷，像纸面上的阴影。
   float lit = max(dot(N, uLight), 0.0);
@@ -51,6 +59,12 @@ void main(){
   // 夜里：整体偏冷偏暗，背光面更深
   col = mix(col, col * vec3(0.55, 0.68, 0.95), uNight * 0.5);
   col = mix(col, col * uShadowTint, (1.0 - lit) * 0.25);
+
+  // 河流与湖泊：在纸面上刻出的水道，偏蓝的墨色，白天映出一点天光
+  float water = smoothstep(0.2, 0.7, texture2D(uCover, vUv).r) * smoothstep(0.01, 0.04, h);
+  vec3 V = normalize(cameraPosition - vWorld);
+  float glint = pow(max(dot(reflect(-uLight, vec3(0.0, 1.0, 0.0)), V), 0.0), 24.0);
+  col = mix(col, mix(vec3(0.16, 0.27, 0.32), vec3(0.05, 0.08, 0.12), uNight) + uSunCol * glint * 0.35, water * 0.75);
 
   // 纸纹
   col *= 0.97 + 0.06 * vnoise(vec3(vUv * 420.0, 0.0));
@@ -145,3 +159,27 @@ void main(){
   gl_FragColor = acc / 25.0;
 }`,
 };
+
+// 城镇灯火：入夜后在沙盘上亮起（与首页同一份城镇与村落位置），白天不画。
+export const townVertex = /* glsl */ `
+uniform sampler2D uHeight;
+uniform float uAmp, uSize, uDpr, uTime;
+attribute float aSize, aPhase, aBright;
+varying float vGlow;
+void main(){
+  vec2 uv = position.xz;
+  vec2 t = texture2D(uHeight, uv).rg;
+  vec3 p = vec3((uv.x - 0.5) * uSize, (t.r + t.g / 256.0) * uAmp + 0.03, (0.5 - uv.y) * uSize);
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  vGlow = aBright * (0.78 + 0.22 * sin(uTime * (1.3 + aPhase * 2.1) + aPhase * 37.0));
+  gl_PointSize = max(aSize * uDpr * 26.0 / max(1.0, -mv.z) * 4.0, 2.0 * uDpr);
+  gl_Position = projectionMatrix * mv;
+}`;
+export const townFragment = /* glsl */ `
+uniform float uOn;
+varying float vGlow;
+void main(){
+  float d = length(gl_PointCoord - 0.5);
+  vec3 c = vec3(1.0, 0.64, 0.3) * (smoothstep(0.12, 0.0, d) * 2.6 + pow(smoothstep(0.5, 0.0, d), 2.0) * 0.7) * vGlow;
+  gl_FragColor = vec4(c * uOn, 1.0);
+}`;

@@ -410,7 +410,9 @@ void main(){
   forest = clamp(forest + valley * 0.12 - ridge * 0.2, 0.0, 1.0);
   float rocky = clamp(smoothstep(0.42, 0.7, slope + (n3 - 0.5) * 0.12) + ridge * smoothstep(0.35, 0.7, h) * 0.6, 0.0, 1.0) * (1.0 - forest * 0.6) * smoothstep(0.15, 0.4, h);
   float beach = (1.0 - smoothstep(0.004, 0.012, h + (n2 - 0.5) * 0.004)) * 0.7;
-  float snow = smoothstep(0.3, 0.75, cover.g * smoothstep(0.08, 0.45, h) + (n1 - 0.5) * 0.2) * (1.0 - smoothstep(0.55, 0.85, slope)) * 0.85;
+  // 积雪：雪区里随地势积在高处与山脊，谷底与陡坡少；不再照搬航海图上一块块的白
+  float snowRegion = texture2D(uCover, vUv, 3.0).g;
+  float snow = smoothstep(0.2, 0.55, snowRegion) * smoothstep(0.12, 0.5, h + (n1 - 0.5) * 0.18 + ridge * 0.12 - valley * 0.12) * (1.0 - smoothstep(0.5, 0.8, slope)) * 0.9;
   vec3 alb = mix(grass, canopy, forest);
   alb = mix(alb, rock, rocky);
   alb = mix(alb, sand, beach);

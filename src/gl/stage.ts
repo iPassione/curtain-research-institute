@@ -33,6 +33,8 @@ class Stage {
   private debug: HTMLElement | null = null;
   private onReady: (() => void) | null = null;
   private warmup = 0;
+  /** 自适应分辨率：掉帧时先把画布分辨率降到 0.8、0.65 倍，仍不够再降档。 */
+  private scale = 1;
 
   constructor() {
     this.tier = initialTier();
@@ -96,7 +98,7 @@ class Stage {
 
   private resize() {
     if (!this.host || !this.scene) return;
-    const w = this.host.clientWidth, h = this.host.clientHeight, dpr = pixelRatio(this.tier);
+    const w = this.host.clientWidth, h = this.host.clientHeight, dpr = pixelRatio(this.tier) * this.scale;
     if (!w || !h) return;
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
@@ -128,7 +130,7 @@ class Stage {
     this.frames.push(ms);
     if (this.frames.length > 60) this.frames.shift();
     const avg = this.frames.reduce((a, b) => a + b, 0) / this.frames.length;
-    if (this.debug) this.debug.textContent = `档位 ${this.tier} · ${Math.round(1000 / avg)} fps · dpr ${pixelRatio(this.tier)}`;
+    if (this.debug) this.debug.textContent = `档位 ${this.tier} · ${Math.round(1000 / avg)} fps · dpr ${(pixelRatio(this.tier) * this.scale).toFixed(2)}`;
     if (forcedTier() || this.warmup < 30 || this.frames.length < 60) return;
     if (avg > 1000 / 45) {
       if (!this.slowSince) this.slowSince = now;
@@ -140,6 +142,9 @@ class Stage {
     this.slowSince = 0;
     this.frames = [];
     if (this.tier === 'static') return;
+    // 先降分辨率（画面几乎不变），仍然掉帧再降档；降档后分辨率恢复
+    if (this.scale > 0.66) { this.scale = this.scale > 0.9 ? 0.8 : 0.65; this.resize(); return; }
+    this.scale = 1;
     this.tier = lowerTier(this.tier);
     if (this.tier === 'static' || !this.scene?.setTier(this.tier)) { this.fail(); return; }
     this.resize();
